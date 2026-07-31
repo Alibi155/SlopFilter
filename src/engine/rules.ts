@@ -100,6 +100,14 @@ const OPENERS = [
   'i was wrong',
   "here's why that matters",
   'stop scrolling',
+  "here's what the research says",
+  "here's what the data says",
+  "here's what i found",
+  "here's what happened",
+  'the numbers say',
+  'the numbers speak',
+  'let me explain',
+  'buckle up',
   // German
   'unpopuläre meinung',
   'lass das mal sacken',
@@ -292,6 +300,12 @@ const CALL_TO_ACTION = [
   'get early access',
   'join the waitlist',
   'check out our',
+  'come see what we',
+  "see what we're building",
+  'see what we are building',
+  'get in early',
+  'early backers',
+  'bonus shares',
   // German
   'mehr erfahren',
   'jetzt anmelden',
@@ -499,11 +513,44 @@ export const RULES: Rule[] = [
       firstMatch(ctx.lower, [
         /\b(?:i|we|my|our)\b[^.!?\n]{0,60}\$\s?\d[\d,.]*\s?(?:k|m|mm|b|million|billion)?\b/,
         /\b\d[\d,.]*\s?(?:k|m)?\+?\s*(?:followers|subscribers|users|customers|downloads|signups|arr|mrr)\b/,
+        // A scale suffix is what separates a flex ("14M+ people", "100K+
+        // students") from a cited figure ("a survey of over 1,000 people").
+        /\b\d[\d,.]*\s?(?:k|m|mm|b)\+?\s*(?:people|students|members|readers|attendees|creators|founders)\b/,
         /\bfrom (?:0|zero)\b[^.!?\n]{0,30}\bto\b[^.!?\n]{0,30}\bin \d+\s*(?:days|weeks|months)\b/,
         // German
         /\b\d[\d,.]*\s?(?:k|m)?\+?\s*(?:follower|abonnenten|kunden|nutzer|downloads|anmeldungen)\b/,
         /\bvon (?:0|null)\b[^.!?\n]{0,30}\bauf\b[^.!?\n]{0,30}\bin \d+\s*(?:tagen|wochen|monaten)\b/,
       ])?.trim() ?? null,
+  },
+  {
+    id: 'closing-question',
+    category: 'ai',
+    label: 'Ends by polling the reader',
+    // Deliberately light: a genuine question at the end of a real post should
+    // never be enough to flag it on its own, only to tip an already-suspect one.
+    weight: 0.5,
+    test: (ctx) => {
+      if (ctx.wordCount < MIN_WORDS_FOR_DENSITY) return null;
+      const last = ctx.sentences.at(-1);
+      if (last === undefined || !last.trim().endsWith('?')) return null;
+      // Addressed at the reader, rather than a question the author is asking.
+      if (!/\b(?:you|your|yourself|du|dir|dich|dein\w*|ihr|euch|eure\w*)\b/i.test(last)) {
+        return null;
+      }
+      return snippet(last);
+    },
+  },
+  {
+    id: 'hype-punctuation',
+    category: 'ai',
+    label: 'Doubled punctuation for emphasis',
+    weight: 0.4,
+    test: (ctx) => {
+      const bursts = ctx.text.match(/[?!]{2,}/g) ?? [];
+      // One "!!" is enthusiasm; several across a post is a house style.
+      if (bursts.length < 2) return null;
+      return snippet(bursts.join(' '));
+    },
   },
   {
     id: 'product-pivot',

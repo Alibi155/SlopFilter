@@ -311,6 +311,41 @@ That is why we built ToneUp, an AI go-to-market engine trained on data earned by
 We are raising now. Learn more and earn bonus shares here: https://lnkd.in/dXXXXXXX`,
   ),
 
+  // Taken from a real feed capture, lightly trimmed. Reported by the user as
+  // obvious slop that scored too low: the survey-listicle hook and the pivot
+  // fired, but the opener, the CTA, the scale flex and the closing poll did not.
+  slopAi(
+    'survey listicle pivoting to a fundraise',
+    `People are kinder to LLMs than to each other??
+
+Here's what the research says...
+
+A survey of over 1,000 people, run by Future, looked at how people talk to AI.
+
+The numbers say a lot.
+✍️ 70% of people are polite to AI overall, saying please and thank you.
+✍️ Most people do it simply because it feels right, not because they're told to.
+✍️ Around 12% admitted a smaller motive sits underneath the politeness.
+✍️ On the flip side, a chunk of impolite users aren't rude on purpose.
+✍️ One researcher pointed to smth worth remembering: polite prompts can noticeably improve output (!!)
+
+So no, people aren't always kinder to bots than to humans.
+
+Funny enough, GenAI Works started the same way: one community, growing into something bigger.
+
+14M+ people first.
+Then companies like NVIDIA and Oracle came on board.
+Add a course platform with 100K+ students, and you get ToneUp.
+
+We're raising through the end of August.
+
+Early backers get bonus shares up to 22%.
+
+Come see what we're building: https://lnkd.in/eFPtSfTF
+
+Are you one of the polite ones, or do you keep your prompts short and to the point?`,
+  ),
+
   // ------------------------------------------------------------------ Clean
   clean(
     'plain technical question',

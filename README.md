@@ -91,8 +91,8 @@ npm run zip       # -> slopfilter-<version>.zip for the Web Store
 ```
 
 The scoring engine in `src/engine/` is pure — no DOM, no `chrome.*` — and is tested against a corpus
-of labelled posts in [`tests/fixtures/posts.ts`](tests/fixtures/posts.ts). It currently gets 37 of 38
-right with **zero false positives** on the 17 genuine posts, including deliberately tricky ones (an
+of labelled posts in [`tests/fixtures/posts.ts`](tests/fixtures/posts.ts). It currently gets 38 of 39
+right with **zero false positives** on the 18 genuine posts, including deliberately tricky ones (an
 enthusiastic team-credit post, a technical writeup that uses em-dashes normally, a plainly-worded
 career change, a substantive German post about a security incident). Contributions to the corpus are
 the most useful contributions there are — if SlopFilter flags something it shouldn't, a fixture
