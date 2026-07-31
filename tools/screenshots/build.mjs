@@ -136,11 +136,15 @@ const beforeAfter = page(
     <div class="body"><div class="cols">
       <div class="col">
         <p class="caption"><span class="dot"></span>Without SlopFilter</p>
-        <div class="feed">${JUDGED.slice(0, 3).map((p) => card(p, { decorated: false })).join('')}</div>
+        <div class="feed">${JUDGED.slice(0, 3)
+          .map((p) => card(p, { decorated: false }))
+          .join('')}</div>
       </div>
       <div class="col">
         <p class="caption on"><span class="dot"></span>With SlopFilter</p>
-        <div class="feed">${JUDGED.slice(0, 3).map((p) => card(p, { decorated: true })).join('')}</div>
+        <div class="feed">${JUDGED.slice(0, 3)
+          .map((p) => card(p, { decorated: true }))
+          .join('')}</div>
       </div>
     </div></div>
   </div>`,
@@ -275,17 +279,31 @@ const keywordItems = KEYWORDS.map(
 
 writeFileSync(
   resolve(out, '5-options.html'),
-  chromePage('Options', 'src/options.html', 'Add your own keywords; export or reset what it learned', [
-    ['<ul class="sf-keywords" id="keyword-list"></ul>', `<ul class="sf-keywords" id="keyword-list">${keywordItems}</ul>`],
-    ['<p class="sf-empty" id="keyword-empty">No keywords yet.</p>', ''],
+  chromePage(
+    'Options',
+    'src/options.html',
+    'Add your own keywords; export or reset what it learned',
     [
-      '<p id="learning-summary">Loading…</p>',
-      '<p id="learning-summary">41 corrections recorded, 3,180 learned signals.</p>',
+      [
+        '<ul class="sf-keywords" id="keyword-list"></ul>',
+        `<ul class="sf-keywords" id="keyword-list">${keywordItems}</ul>`,
+      ],
+      ['<p class="sf-empty" id="keyword-empty">No keywords yet.</p>', ''],
+      [
+        '<p id="learning-summary">Loading…</p>',
+        '<p id="learning-summary">41 corrections recorded, 3,180 learned signals.</p>',
+      ],
+      [
+        '<input type="checkbox" id="show-badge" />',
+        '<input type="checkbox" id="show-badge" checked />',
+      ],
+      [
+        '<input type="checkbox" id="show-flag" />',
+        '<input type="checkbox" id="show-flag" checked />',
+      ],
+      ['<p class="sf-status" id="status"></p>', ''],
     ],
-    ['<input type="checkbox" id="show-badge" />', '<input type="checkbox" id="show-badge" checked />'],
-    ['<input type="checkbox" id="show-flag" />', '<input type="checkbox" id="show-flag" checked />'],
-    ['<p class="sf-status" id="status"></p>', ''],
-  ]),
+  ),
 );
 
 /* ------------------------------------------------------------- promo tile */
