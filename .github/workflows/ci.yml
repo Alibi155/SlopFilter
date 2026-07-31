@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the manifest points at files that exist
+        run: |
+          set -euo pipefail
+          for file in content.js content.css popup.html options.html icons/icon-128.png; do
+            test -f "dist/$file" || { echo "missing dist/$file"; exit 1; }
+          done
+          # MV3 content scripts must be classic scripts, not ES modules.
+          if grep -qE '^\s*(import|export)\s' dist/content.js; then
+            echo "content.js contains top-level import/export; it must be a self-contained IIFE"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slopfilter-unpacked
+          path: dist/

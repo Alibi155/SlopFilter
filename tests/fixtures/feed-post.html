@@ -1,0 +1,62 @@
+<!--
+  A sanitized LinkedIn feed post, trimmed to the structure the extension relies
+  on. Names and content are invented; the class names and data attributes mirror
+  what LinkedIn actually renders, so this fixture is what catches a selector
+  regression before it reaches the browser.
+-->
+<div class="scaffold-finite-scroll__content">
+  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000001">
+    <div class="update-components-actor">
+      <a class="update-components-actor__meta-link" href="https://www.linkedin.com/in/jane-example-1234/">
+        <span class="update-components-actor__title">
+          <span aria-hidden="true">Jane Example</span>
+          <span class="visually-hidden">Jane Example</span>
+        </span>
+        <span class="update-components-actor__description">Growth Advisor · 3rd+</span>
+      </a>
+    </div>
+    <div class="feed-shared-update-v2__description-wrapper">
+      <div class="update-components-text">
+        <span class="break-words" dir="ltr">🚀 Three lessons from scaling to $2M ARR
+
+💡 Hire slow, fire fast
+✅ Talk to customers every single day
+
+It's not about the product. It's about the problem.
+
+Agree? #leadership #growth #startups…&nbsp;see more</span>
+      </div>
+    </div>
+    <div class="update-components-image">
+      <img alt="chart" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" />
+    </div>
+  </div>
+
+  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000002">
+    <div class="update-components-header">Marcus Example reposted this</div>
+    <div class="update-components-actor">
+      <a class="update-components-actor__meta-link" href="https://www.linkedin.com/company/acme-corp/">
+        <span class="update-components-actor__title"><span aria-hidden="true">Acme Corp</span></span>
+        <span class="update-components-actor__description">Promoted</span>
+      </a>
+    </div>
+    <div class="update-components-text">
+      <span class="break-words" dir="ltr">We are hiring a backend engineer in Berlin. Go and Postgres, hybrid two days a week, salary band published in the ad.</span>
+    </div>
+  </div>
+
+  <!-- A post with no URN attribute, to exercise the content-hash fallback. -->
+  <div class="feed-shared-update-v2">
+    <div class="update-components-actor">
+      <span class="update-components-actor__title"><span aria-hidden="true">Anon Poster</span></span>
+    </div>
+    <div class="update-components-text">
+      <span class="break-words" dir="ltr">A short update with enough characters in it to clear the scorable length floor.</span>
+    </div>
+  </div>
+
+  <!-- Too little text to score: a bare reaction card. -->
+  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000004">
+    <div class="update-components-text"><span class="break-words" dir="ltr">Congrats!</span></div>
+  </div>
+</div>

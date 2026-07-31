@@ -1,0 +1,271 @@
+/* Shared styling for the popup and the options page. */
+
+:root {
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --text: #1b1f23;
+  --muted: #56687a;
+  --border: #d0d7de;
+  --accent: #0a66c2;
+  --danger: #b42318;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d2226;
+    --surface: #262d34;
+    --text: #e8e8e8;
+    --muted: #a5b1bd;
+    --border: #38434f;
+    --accent: #70b5f9;
+    --danger: #f0846f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+h2 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sf-popup {
+  width: 300px;
+  padding: 14px;
+}
+
+.sf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sf-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sf-field {
+  margin-bottom: 14px;
+}
+
+.sf-field > label,
+.sf-label {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.sf-hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sf-radios {
+  display: flex;
+  gap: 14px;
+}
+
+.sf-radios label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.sf-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.sf-stats strong {
+  display: block;
+  font-size: 16px;
+}
+
+.sf-stats span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sf-learning {
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sf-health {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.sf-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sf-privacy {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover,
+button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.sf-danger:hover,
+button.sf-danger:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ------------------------------------------------------------- options page */
+
+.sf-options {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+.sf-card {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.sf-card p {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.sf-keyword-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.sf-keyword-form input[type='text'] {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+input[type='text'],
+select {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.sf-keywords {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sf-keywords li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+
+.sf-keywords li:first-child {
+  border-top: none;
+}
+
+.sf-keywords .sf-term {
+  flex: 1;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sf-tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sf-empty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.sf-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sf-status {
+  margin: 10px 0 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 1.2em;
+}

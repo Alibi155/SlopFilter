@@ -1,0 +1,38 @@
+{
+  "name": "slopfilter",
+  "version": "0.1.0",
+  "description": "A local-only Chrome extension that greys out AI slop and humblebrag posts in your LinkedIn feed.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "npm run clean && npm run build:pages && npm run build:content && npm run icons",
+    "build:pages": "vite build",
+    "build:content": "vite build --config vite.content.config.ts",
+    "clean": "rm -rf dist",
+    "icons": "node scripts/icons.mjs",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "zip": "npm run build && cd dist && zip -r ../slopfilter-$npm_package_version.zip . -x '.*'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.20.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vite": "^6.0.5",
+    "vite-plugin-static-copy": "^2.2.0",
+    "vitest": "^2.1.8"
+  }
+}
