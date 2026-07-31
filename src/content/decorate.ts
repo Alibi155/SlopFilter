@@ -17,9 +17,6 @@ export interface DecorateOptions {
 const STATE_ATTR = 'data-sf-state';
 const MODE_ATTR = 'data-sf-mode';
 
-/** Marks the subtree that actually gets dimmed, so our own chip stays crisp. */
-const DIM_CLASS = 'sf-dim-target';
-
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
@@ -34,16 +31,16 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 /**
- * Wrap the post's own children so dimming applies to them but not to the
- * controls we add. Idempotent — repeated calls reuse the existing wrapper.
+ * Whether our decoration is still present on a post.
+ *
+ * LinkedIn's feed is React, and re-rendering a post replaces its children —
+ * taking our chip and panel with it. The container keeps its attributes, so the
+ * only reliable evidence is whether the chip we appended is still there.
  */
-function dimTarget(post: HTMLElement): HTMLElement {
-  const existing = post.querySelector<HTMLElement>(`:scope > .${DIM_CLASS}`);
-  if (existing) return existing;
-  const wrapper = el('div', DIM_CLASS);
-  while (post.firstChild) wrapper.appendChild(post.firstChild);
-  post.appendChild(wrapper);
-  return wrapper;
+export function decorationIntact(element: Element, chipExpected: boolean): boolean {
+  if (!element.hasAttribute(STATE_ATTR)) return false;
+  if (!chipExpected) return true;
+  return element.querySelector(':scope > .sf-chip') !== null;
 }
 
 function buildPanel(verdict: Verdict, options: DecorateOptions): HTMLElement {
@@ -122,12 +119,11 @@ export function decorate(
   options: DecorateOptions,
 ): void {
   const host = element as HTMLElement;
-  undecorate(host, { keepWrapper: true });
+  undecorate(host);
 
   const flagged = verdict.label !== 'clean' && !options.cleared;
   host.setAttribute(STATE_ATTR, options.cleared ? 'cleared' : flagged ? 'flagged' : 'clean');
   host.setAttribute(MODE_ATTR, options.mode);
-  dimTarget(host);
 
   const wantsChip = flagged ? options.showBadge : options.showFlagAffordance;
   if (!wantsChip) return;
@@ -159,17 +155,16 @@ export function decorate(
   host.append(chip, panel);
 }
 
-/** Remove every trace of the extension from a post. */
-export function undecorate(element: Element, options: { keepWrapper?: boolean } = {}): void {
+/**
+ * Remove every trace of the extension from a post.
+ *
+ * Only ever removes nodes we added and attributes we set — LinkedIn's own DOM
+ * is never touched, so switching the extension off leaves the page exactly as
+ * it was found.
+ */
+export function undecorate(element: Element): void {
   const host = element as HTMLElement;
   host.querySelectorAll(':scope > .sf-chip, :scope > .sf-panel').forEach((node) => node.remove());
   host.removeAttribute(STATE_ATTR);
   host.removeAttribute(MODE_ATTR);
-
-  if (options.keepWrapper === true) return;
-  // Unwrap so disabling the extension leaves LinkedIn's DOM exactly as found.
-  const wrapper = host.querySelector<HTMLElement>(`:scope > .${DIM_CLASS}`);
-  if (!wrapper) return;
-  while (wrapper.firstChild) host.insertBefore(wrapper.firstChild, wrapper);
-  wrapper.remove();
 }

@@ -12,9 +12,9 @@ import {
   onChange,
   setHealth,
 } from '../storage/store';
-import { decorate, undecorate, type FeedbackAction } from './decorate';
+import { decorate, decorationIntact, undecorate, type FeedbackAction } from './decorate';
 import { extractPost, isScorable } from './extract';
-import { findFeedRoot, findPosts, isFeedPage } from './selectors';
+import { findPosts, isFeedPage } from './selectors';
 
 /**
  * Content script entry point.
@@ -54,6 +54,12 @@ function optionsFor(post: PostFeatures, verdict: Verdict) {
     cleared: overrides[post.urn] === 0,
     onFeedback: (action: FeedbackAction) => handleFeedback(post, verdict, action),
   };
+}
+
+/** Whether this post should be showing a chip under the current settings. */
+function chipExpected(entry: Tracked): boolean {
+  const flagged = entry.verdict.label !== 'clean' && overrides[entry.post.urn] !== 0;
+  return flagged ? settings.showBadge : settings.showFlagAffordance;
 }
 
 function render(entry: Tracked): void {
@@ -120,7 +126,21 @@ function scan(): void {
   reportHealth(found.length);
 
   for (const element of found) {
-    if (element.hasAttribute(PROCESSED_ATTR)) continue;
+    const seen = element.getAttribute(PROCESSED_ATTR);
+    if (seen === 'skip') continue;
+
+    if (seen !== null) {
+      // Already scored. Verify our UI is still attached rather than assuming
+      // it: LinkedIn re-renders posts in place, which silently removes the
+      // chip and panel. Treating "seen" as permanent is what made that damage
+      // stick until a full page reload.
+      const entry = tracked.get(seen);
+      if (entry !== undefined && !decorationIntact(element, chipExpected(entry))) {
+        entry.element = element;
+        render(entry);
+      }
+      continue;
+    }
 
     const post = extractPost(element);
     if (!isScorable(post)) {
@@ -168,8 +188,13 @@ function teardown(): void {
 async function start(): Promise<void> {
   [settings, model, overrides] = await Promise.all([getSettings(), getModel(), getOverrides()]);
 
+  // Observe the body, not the feed container. LinkedIn replaces the feed
+  // wrapper on in-app navigation and on "show new posts", which would leave an
+  // observer bound to a detached node — no more mutations, no more scans, and
+  // the extension silently dead until reload. Scans are debounced onto idle
+  // time, so the wider scope costs little.
   const observer = new MutationObserver(scheduleScan);
-  observer.observe(findFeedRoot(), { childList: true, subtree: true });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   // LinkedIn is a single-page app: navigating to and from the feed does not
   // reload the script, so the URL has to be polled to catch re-entry.

@@ -102,7 +102,6 @@ function card(post, { decorated }) {
 
   return `
   <div class="card"${decorated ? ` data-sf-state="${state}" data-sf-mode="dim"` : ''}>
-    ${decorated ? '<div class="sf-dim-target">' : ''}
       <div class="actor">
         <div class="av" style="background:${post.avatar}">${esc(initials)}</div>
         <div class="who">
@@ -113,7 +112,6 @@ function card(post, { decorated }) {
       </div>
       <div class="txt">${esc(post.text)}</div>
       <div class="acts"><span>👍 Like</span><span>💬 Comment</span><span>↻ Repost</span><span>➤ Send</span></div>
-    ${decorated ? '</div>' : ''}
     ${chip}
   </div>`;
 }
@@ -183,14 +181,12 @@ const panel = page(
     ${header('', 'Every flag quotes the text that triggered it')}
     <div class="body"><div class="feed narrow">
       <div class="card" data-sf-state="flagged" data-sf-mode="dim">
-        <div class="sf-dim-target">
           <div class="actor">
             <div class="av" style="background:${target.avatar}">MF</div>
             <div class="who"><div class="nm">${esc(target.author)}</div><div class="ti">${esc(target.title)}</div><div class="tm">${esc(target.time)} · 🌐</div></div>
           </div>
           <div class="txt">${esc(target.text)}</div>
           <div class="acts"><span>👍 Like</span><span>💬 Comment</span><span>↻ Repost</span><span>➤ Send</span></div>
-        </div>
         <button class="sf-chip" data-sf-kind="ai" aria-expanded="true">${esc(badgeText(target.verdict))}</button>
         <div class="sf-panel">
           <p class="sf-panel__title">Flagged as AI slop</p>

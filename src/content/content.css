@@ -35,11 +35,13 @@ html.theme--dark {
 }
 
 /*
- * Dimmed, never removed. Transitions are short so hovering a post to read it
- * does not feel like waiting, and `filter` is kept cheap enough to stay off the
- * compositor's critical path while scrolling.
+ * Dimming is applied to the post's own children rather than to a wrapper we
+ * insert. LinkedIn's feed is React: moving nodes it created into a container of
+ * ours breaks its reconciler, which later tries to remove them from a parent
+ * that no longer owns them. Decoration therefore only ever adds siblings, and
+ * the chip and panel are excluded from the dimming so they stay legible.
  */
-[data-sf-state='flagged'] .sf-dim-target {
+[data-sf-state='flagged'] > *:not(.sf-chip):not(.sf-panel) {
   opacity: var(--sf-dim-opacity);
   filter: grayscale(0.7);
   transition:
@@ -47,31 +49,22 @@ html.theme--dark {
     filter 0.12s ease-out;
 }
 
-[data-sf-state='flagged']:hover .sf-dim-target,
-[data-sf-state='flagged']:focus-within .sf-dim-target {
+[data-sf-state='flagged']:hover > *:not(.sf-chip):not(.sf-panel),
+[data-sf-state='flagged']:focus-within > *:not(.sf-chip):not(.sf-panel) {
   opacity: 0.95;
   filter: grayscale(0);
 }
 
-/* Collapse mode: keep a readable sliver, expand on hover or focus. */
-[data-sf-state='flagged'][data-sf-mode='collapse'] .sf-dim-target {
-  max-height: 3.5rem;
+/*
+ * Collapse mode clips the container itself. Hover and focus-within lift the
+ * clip, which also covers the panel being open: clicking the chip focuses it,
+ * and the chip lives inside the container.
+ */
+[data-sf-state='flagged'][data-sf-mode='collapse']:not(:hover):not(:focus-within) {
+  max-height: 5.5rem;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
-}
-
-[data-sf-state='flagged'][data-sf-mode='collapse']:hover .sf-dim-target,
-[data-sf-state='flagged'][data-sf-mode='collapse']:focus-within .sf-dim-target {
-  max-height: none;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-/* A post the user has personally cleared is never dimmed again. */
-[data-sf-state='cleared'] .sf-dim-target {
-  opacity: 1;
-  filter: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
 }
 
 /* ------------------------------------------------------------------- chip */
@@ -251,7 +244,7 @@ html.theme--dark {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-sf-state='flagged'] .sf-dim-target,
+  [data-sf-state='flagged'] > *:not(.sf-chip):not(.sf-panel),
   .sf-chip--quiet {
     transition: none;
   }

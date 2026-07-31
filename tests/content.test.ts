@@ -53,6 +53,11 @@ let storage: Record<string, unknown>;
 
 beforeEach(() => {
   vi.resetModules();
+  // A fresh <body> per test, not just fresh innerHTML. The content script
+  // observes document.body, and jsdom keeps one window for the whole file, so
+  // a previous test's observer would otherwise stay live and keep decorating
+  // the DOM this test is asserting on.
+  document.documentElement.replaceChild(document.createElement('body'), document.body);
   document.body.innerHTML = html;
   storage = installChromeStub();
 });
@@ -72,9 +77,11 @@ describe('content script on a feed page', () => {
     await settle();
 
     const post = document.querySelector('[data-sf-state="flagged"]')!;
-    // The requirement is greyed out, not removed: the original text must survive.
+    // The requirement is greyed out, not removed: the original text must
+    // survive, and dimming is CSS on the post's own children rather than a
+    // wrapper, so nothing of LinkedIn's is moved.
     expect(post.textContent).toContain('Three lessons from scaling');
-    expect(post.querySelector('.sf-dim-target')).not.toBeNull();
+    expect(post.querySelector('[data-testid="expandable-text-box"]')).not.toBeNull();
   });
 
   it('shows a chip whose panel explains the verdict', async () => {
@@ -154,7 +161,7 @@ describe('content script on a feed page', () => {
     await settle();
 
     expect(document.querySelector('.sf-chip')).toBeNull();
-    expect(document.querySelector('.sf-dim-target')).toBeNull();
+    expect(document.querySelector('.sf-panel')).toBeNull();
     expect(document.querySelector('[data-sf-state]')).toBeNull();
     // LinkedIn's own markup is left exactly as it was found.
     expect(findPosts(document)[0]!.textContent).toContain('Three lessons from scaling');
@@ -194,5 +201,42 @@ describe('health reporting', () => {
     await settle();
 
     expect((storage.health as { postsFound: number }).postsFound).toBe(0);
+  });
+});
+
+describe('surviving LinkedIn re-rendering a post', () => {
+  it('does not reparent LinkedIn’s own nodes', async () => {
+    // The feed is React. Moving nodes it created into a wrapper of ours breaks
+    // its reconciler — it later calls removeChild on a parent that no longer
+    // owns the node. Decoration must be purely additive.
+    const post = findPosts(document)[0]!;
+    const ownBefore = [...post.children];
+
+    await import('../src/content/index');
+    await settle();
+
+    for (const child of ownBefore) {
+      expect(child.parentElement, 'LinkedIn node was reparented').toBe(post);
+    }
+  });
+
+  it('re-decorates a post whose contents React has replaced', async () => {
+    await import('../src/content/index');
+    await settle();
+
+    const post = document.querySelector('[data-sf-state="flagged"]')!;
+    expect(post.querySelector('.sf-chip')).not.toBeNull();
+
+    // React re-renders the subtree, wiping out whatever we injected.
+    post.querySelectorAll('.sf-chip, .sf-panel').forEach((n) => n.remove());
+    post.removeAttribute('data-sf-state');
+    // Any feed mutation then schedules the next scan.
+    document
+      .querySelector('[componentkey^="container-update-list"]')!
+      .appendChild(document.createElement('div'));
+    await settle();
+
+    expect(post.querySelector('.sf-chip'), 'decoration never came back').not.toBeNull();
+    expect(post.getAttribute('data-sf-state')).toBe('flagged');
   });
 });
