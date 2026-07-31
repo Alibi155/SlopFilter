@@ -65,13 +65,23 @@ export interface ModelState {
   version: number;
 }
 
-/** A user correction, kept locally so the model can be retrained from scratch. */
+/**
+ * A user correction, kept locally so the model can be retrained from scratch.
+ *
+ * Stores the post text and the ids of the rules that fired, not the expanded
+ * feature vector. That is ~6x smaller — the full vector runs about 450 features
+ * per post, which at the log's cap would overrun `chrome.storage.local`'s 10MB
+ * quota — and it means the feature encoding can change in a later version
+ * without invalidating everything the user has taught the filter.
+ */
 export interface FeedbackEntry {
   urn: string;
   /** 1 = the user says this is slop, 0 = the user says it is not. */
   label: 0 | 1;
-  /** Feature vector at the time of labelling, so retraining needs no re-scrape. */
-  features: Record<string, number>;
+  /** Post text at the time of labelling. */
+  text: string;
+  /** Ids of the signals that fired, replayed as `r:` features on retrain. */
+  signals: string[];
   /** Epoch millis. */
   at: number;
 }

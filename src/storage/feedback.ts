@@ -1,4 +1,4 @@
-import { retrain, train } from '../engine/classifier';
+import { buildFeatures, retrain, train } from '../engine/classifier';
 import type { FeedbackEntry, ModelState } from '../engine/types';
 import { MAX_FEEDBACK_ENTRIES } from './schema';
 import { bumpStats, getFeedback, getModel, setFeedback, setModel, setOverride } from './store';
@@ -12,12 +12,13 @@ import { bumpStats, getFeedback, getModel, setFeedback, setModel, setOverride } 
  */
 export async function recordFeedback(
   urn: string,
-  features: Record<string, number>,
+  text: string,
+  signals: string[],
   label: 0 | 1,
 ): Promise<ModelState> {
   const log = await getFeedback();
   const existing = log.findIndex((entry) => entry.urn === urn);
-  const entry: FeedbackEntry = { urn, label, features, at: Date.now() };
+  const entry: FeedbackEntry = { urn, label, text, signals, at: Date.now() };
 
   let model: ModelState;
   if (existing >= 0) {
@@ -26,7 +27,7 @@ export async function recordFeedback(
   } else {
     log.push(entry);
     if (log.length > MAX_FEEDBACK_ENTRIES) log.splice(0, log.length - MAX_FEEDBACK_ENTRIES);
-    model = train(await getModel(), features, label);
+    model = train(await getModel(), buildFeatures(text, signals), label);
     // The log is capped, so keep the two in agreement rather than letting
     // labelCount drift above the number of examples we can actually replay.
     model.labelCount = log.length;
@@ -86,8 +87,8 @@ export async function importLearning(bundle: unknown): Promise<ModelState> {
     (entry): entry is FeedbackEntry =>
       typeof entry?.urn === 'string' &&
       (entry.label === 0 || entry.label === 1) &&
-      typeof entry.features === 'object' &&
-      entry.features !== null,
+      typeof entry.text === 'string' &&
+      Array.isArray(entry.signals),
   );
   await setFeedback(feedback.slice(-MAX_FEEDBACK_ENTRIES));
   return retrainFromLog();

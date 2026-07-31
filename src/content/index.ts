@@ -1,6 +1,5 @@
 import './content.css';
 
-import { buildFeatures } from '../engine/classifier';
 import { scorePost } from '../engine/score';
 import type { ModelState, PostFeatures, Verdict } from '../engine/types';
 import { recordFeedback } from '../storage/feedback';
@@ -61,8 +60,8 @@ async function handleFeedback(
   action: FeedbackAction,
 ): Promise<void> {
   const label: 0 | 1 = action === 'slop' ? 1 : 0;
-  const features = buildFeatures(post.text, verdict.reasons);
-  model = await recordFeedback(post.urn, features, label);
+  const signals = verdict.reasons.map((reason) => reason.id);
+  model = await recordFeedback(post.urn, post.text, signals, label);
   overrides = { ...overrides, [post.urn]: label };
   rescoreAll();
 }

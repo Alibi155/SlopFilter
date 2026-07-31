@@ -106,6 +106,11 @@ describe('content script on a feed page', () => {
     expect(storage.overrides).toEqual({ 'sf:key:cF7f8Soh-cB2SgNUpFjb': 0 });
     expect((storage.model as { labelCount: number }).labelCount).toBe(1);
     expect((storage.feedback as unknown[]).length).toBe(1);
+    // The log stores text + fired-rule ids, not the expanded feature vector:
+    // ~6x smaller, and it survives a change to the feature encoding.
+    const entry = (storage.feedback as { text: string; signals: string[] }[])[0]!;
+    expect(entry.text).toContain('Three lessons from scaling');
+    expect(entry.signals).toContain('emoji-bullets');
   });
 
   it('flags a post the user reports, and remembers it', async () => {

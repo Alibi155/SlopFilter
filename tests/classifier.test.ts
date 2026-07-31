@@ -69,29 +69,29 @@ describe('train', () => {
 });
 
 describe('retrain', () => {
-  function entry(urn: string, label: 0 | 1, features: Record<string, number>): FeedbackEntry {
-    return { urn, label, features, at: Number(urn) };
+  function entry(urn: string, label: 0 | 1, text: string, signals: string[] = []): FeedbackEntry {
+    return { urn, label, text, signals, at: Number(urn) };
   }
 
   it('is deterministic for the same log', () => {
     const log = [
-      entry('1', 1, { 'w:slop': 1 }),
-      entry('2', 0, { 'w:real': 1 }),
-      entry('3', 1, { 'w:slop': 1, 'w:bait': 1 }),
+      entry('1', 1, 'slop slop slop'),
+      entry('2', 0, 'real postgres migration'),
+      entry('3', 1, 'slop bait slop bait'),
     ];
     expect(retrain(log)).toEqual(retrain([...log].reverse()));
   });
 
   it('reports labelCount as the log size', () => {
-    expect(retrain([entry('1', 1, { a: 1 }), entry('2', 0, { b: 1 })]).labelCount).toBe(2);
+    expect(retrain([entry('1', 1, 'alpha alpha'), entry('2', 0, 'beta beta')]).labelCount).toBe(2);
   });
 
   it('produces a model that classifies its training data', () => {
     const model = retrain([
-      entry('1', 1, { 'w:synergy': 1 }),
-      entry('2', 1, { 'w:synergy': 1, 'w:leverage': 1 }),
-      entry('3', 0, { 'w:postgres': 1 }),
-      entry('4', 0, { 'w:postgres': 1, 'w:migration': 1 }),
+      entry('1', 1, 'synergy synergy'),
+      entry('2', 1, 'synergy leverage'),
+      entry('3', 0, 'postgres postgres'),
+      entry('4', 0, 'postgres migration'),
     ]);
     expect(predict(model, { 'w:synergy': 1 })).toBeGreaterThan(0.6);
     expect(predict(model, { 'w:postgres': 1 })).toBeLessThan(0.4);

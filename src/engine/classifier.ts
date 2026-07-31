@@ -29,10 +29,13 @@ function sigmoid(z: number): number {
  * *which heuristics this user disagrees with* — the single most useful thing it
  * can learn — rather than only which words they dislike.
  */
-export function buildFeatures(text: string, signals: Signal[]): Record<string, number> {
+export function buildFeatures(
+  text: string,
+  signals: readonly Signal[] | readonly string[],
+): Record<string, number> {
   const features = featurize(text);
   for (const signal of signals) {
-    features[`r:${signal.id}`] = 1;
+    features[`r:${typeof signal === 'string' ? signal : signal.id}`] = 1;
   }
   return features;
 }
@@ -95,7 +98,7 @@ export function retrain(entries: FeedbackEntry[]): ModelState {
       }
     }
     for (const entry of ordered) {
-      train(model, entry.features, entry.label, false);
+      train(model, buildFeatures(entry.text, entry.signals), entry.label, false);
     }
   }
   model.labelCount = entries.length;
