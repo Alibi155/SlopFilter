@@ -1,10 +1,12 @@
 # SlopFilter for LinkedIn
 
-A Chrome extension that greys out AI-generated slop and humblebrag posts in your LinkedIn feed —
-and learns what _you_ consider slop.
+Works for English and German LinkedIn feeds.
 
-Nothing is deleted, nothing is hidden. Flagged posts stay exactly where they are, dimmed, with a
-chip explaining why. Hover to read one normally. Disagree, and one click teaches the filter.
+This extensions allows you to grey out or completely hide LinkedIn Posts, that are likely created mostly by AI. It runs fully locally, with no network access or traffic and compares the posts against a list of patterns and words typically used by large language models.
+
+The model is mostly based on logistic regression and learns based on your feedback on Posts (e.g., marking them as slop or the reverse).
+
+There is no visible impact on performance, not blocking DOM buildup and using ca. 0.3ms per Post for classification. 
 
 **Everything runs on your device.** The extension requests no network permission at all, so it is
 structurally incapable of sending your feed anywhere. No account, no server, no telemetry.
