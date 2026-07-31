@@ -7,8 +7,35 @@ export const MODEL_VERSION = 1;
 const LEARNING_RATE = 0.12;
 /** L2 penalty, applied only to features present in the current example. */
 const L2 = 1e-4;
-/** Passes over the feedback log when retraining from scratch. */
-const RETRAIN_EPOCHS = 12;
+
+/**
+ * Roughly how many gradient steps a full retrain should take, spread over
+ * however many examples the log holds.
+ *
+ * What determines convergence for SGD is the total number of steps, not the
+ * number of passes, so a small log gets many epochs and a large one gets few.
+ * Keeping the product fixed means a retrain costs about the same whether the
+ * user has corrected 50 posts or 2000 — which matters because it runs on the
+ * main thread when they change a verdict they had already given.
+ */
+const RETRAIN_STEP_BUDGET = 6000;
+const MIN_RETRAIN_EPOCHS = 3;
+const MAX_RETRAIN_EPOCHS = 12;
+
+/**
+ * Cap on how many learned weights are kept.
+ *
+ * Every labelled post contributes a few hundred word and bigram features, and
+ * real vocabulary keeps growing roughly with the square root of the text seen,
+ * so without a cap the model would grow without bound. When the cap is passed,
+ * the weights closest to zero are dropped: they are the ones carrying least
+ * evidence, and any that mattered will be relearned the next time they appear.
+ *
+ * Rule features (`r:`) are never pruned. There are only a couple of dozen of
+ * them and they encode the most valuable thing the model learns — which
+ * built-in heuristics this particular user disagrees with.
+ */
+const MAX_MODEL_FEATURES = 20_000;
 
 export function emptyModel(): ModelState {
   return { weights: {}, bias: 0, labelCount: 0, version: MODEL_VERSION };
@@ -63,17 +90,53 @@ export function train(
   countExample = true,
 ): ModelState {
   const error = predict(model, features) - label;
+  let added = 0;
   for (const [name, value] of Object.entries(features)) {
-    const current = model.weights[name] ?? 0;
+    const existing = model.weights[name];
+    const current = existing ?? 0;
     const gradient = error * value + L2 * current;
     const next = current - LEARNING_RATE * gradient;
     // Drop weights that decay to noise, so storage does not grow without bound.
-    if (Math.abs(next) < 1e-4) delete model.weights[name];
-    else model.weights[name] = next;
+    if (Math.abs(next) < 1e-4) {
+      delete model.weights[name];
+    } else {
+      if (existing === undefined) added += 1;
+      model.weights[name] = next;
+    }
   }
   model.bias -= LEARNING_RATE * error;
   if (countExample) model.labelCount += 1;
+
+  // Counting keys is O(model), so it must not happen on every step — that cost
+  // dwarfs the gradient update itself. Track new keys instead and only measure
+  // once enough have accumulated to possibly matter.
+  newFeaturesSinceCheck += added;
+  if (newFeaturesSinceCheck >= PRUNE_CHECK_INTERVAL) {
+    newFeaturesSinceCheck = 0;
+    if (Object.keys(model.weights).length > MAX_MODEL_FEATURES) pruneWeights(model);
+  }
   return model;
+}
+
+/** New keys seen since the last size check. See the note in {@link train}. */
+let newFeaturesSinceCheck = 0;
+const PRUNE_CHECK_INTERVAL = 2000;
+
+/**
+ * Drop the least-informative weights back down to the cap.
+ *
+ * Called only on the rare step that crosses {@link MAX_MODEL_FEATURES}, and
+ * trims to 90% so it does not re-fire on the very next example.
+ */
+function pruneWeights(model: ModelState): void {
+  const keep = Math.floor(MAX_MODEL_FEATURES * 0.9);
+  const entries = Object.entries(model.weights);
+  const rules = entries.filter(([name]) => name.startsWith('r:'));
+  const rest = entries
+    .filter(([name]) => !name.startsWith('r:'))
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .slice(0, Math.max(0, keep - rules.length));
+  model.weights = Object.fromEntries([...rules, ...rest]);
 }
 
 /**
@@ -86,7 +149,15 @@ export function train(
 export function retrain(entries: FeedbackEntry[]): ModelState {
   const model = emptyModel();
   const ordered = [...entries].sort((a, b) => a.at - b.at);
-  for (let epoch = 0; epoch < RETRAIN_EPOCHS; epoch += 1) {
+  const epochs =
+    ordered.length === 0
+      ? 0
+      : Math.min(
+          MAX_RETRAIN_EPOCHS,
+          Math.max(MIN_RETRAIN_EPOCHS, Math.round(RETRAIN_STEP_BUDGET / ordered.length)),
+        );
+
+  for (let epoch = 0; epoch < epochs; epoch += 1) {
     for (let i = ordered.length - 1; i > 0; i -= 1) {
       // Deterministic shuffle: same log always yields the same model.
       const j = (i * 1103515245 + epoch * 12345) % (i + 1);

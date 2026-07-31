@@ -132,3 +132,33 @@ describe('feedback changes future verdicts', () => {
     }
   });
 });
+
+describe('bounded growth', () => {
+  it('caps the number of learned weights and keeps every rule feature', () => {
+    const model = emptyModel();
+    // Feed distinct vocabulary until the cap is crossed several times over.
+    for (let i = 0; i < 260; i += 1) {
+      const features: Record<string, number> = { 'r:emoji-bullets': 1, 'r:metric-flex': 1 };
+      for (let w = 0; w < 200; w += 1) features[`w:word${i}x${w}`] = 1;
+      train(model, features, (i % 2) as 0 | 1);
+    }
+    expect(Object.keys(model.weights).length).toBeLessThanOrEqual(20_000);
+    expect(model.weights['r:emoji-bullets']).toBeDefined();
+    expect(model.weights['r:metric-flex']).toBeDefined();
+  });
+
+  it('spends a similar step budget whether the log is small or large', () => {
+    const make = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        urn: `u${i}`,
+        label: (i % 2) as 0 | 1,
+        text: `example post number ${i} about synergy and postgres`,
+        signals: ['llm-vocabulary'],
+        at: i,
+      }));
+    // Both must converge enough to separate the classes without a full 12
+    // passes over a 2000-entry log.
+    expect(retrain(make(40)).labelCount).toBe(40);
+    expect(retrain(make(2000)).labelCount).toBe(2000);
+  });
+});
