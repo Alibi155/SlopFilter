@@ -570,8 +570,9 @@ export const RULES: Rule[] = [
     test: (ctx) => {
       const hits = phraseHits(ctx.lower, CALL_TO_ACTION);
       const shortlink = /\blnkd\.in\//.test(ctx.lower);
-      if (hits.length === 0 && !shortlink) return null;
-      // A bare link is normal; a link plus a sales imperative is the tell.
+      // A bare link is normal — people share things. A link plus a sales
+      // imperative is the tell, so the imperative is what gates the rule; the
+      // link only raises the weight.
       if (hits.length === 0) return null;
       return snippet(shortlink ? `${hits.join(', ')} + lnkd.in link` : hits.join(', '));
     },
