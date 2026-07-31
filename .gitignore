@@ -9,3 +9,5 @@ coverage/
 # Screenshot working files (generated; the PNGs land in docs/screenshots/)
 .shots/
 tools/screenshots/pages/
+
+store/

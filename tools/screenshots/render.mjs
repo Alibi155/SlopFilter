@@ -38,20 +38,41 @@ if (!chrome) {
   process.exit(1);
 }
 
-/** Store-mandated sizes: 1280x800 screenshots, 440x280 small promo tile. */
+/**
+ * Store-mandated sizes: 1280x800 screenshots, 440x280 small promo tile,
+ * 1400x560 marquee tile.
+ *
+ * The two promo tiles must have no alpha channel. Chrome emits a 24-bit PNG
+ * whenever the page background is fully opaque, which both tile pages are —
+ * verified after rendering rather than assumed.
+ */
 const SHOTS = [
-  ['1-before-after', 1280, 800],
-  ['2-in-feed', 1280, 800],
-  ['3-reasons', 1280, 800],
-  ['4-popup', 1280, 800],
-  ['5-options', 1280, 800],
-  ['promo-tile', 440, 280],
+  ['1-before-after', '1-before-after', 1280, 800],
+  ['2-in-feed', '2-in-feed', 1280, 800],
+  ['3-reasons', '3-reasons', 1280, 800],
+  ['4-popup', '4-popup', 1280, 800],
+  ['5-options', '5-options', 1280, 800],
+  ['promo-tile', 'promo', 440, 280],
+  ['marquee-tile', 'marquee', 1400, 560],
 ];
+
+/** Assets the store rejects if they carry an alpha channel. */
+const MUST_BE_OPAQUE = new Set(['promo-tile', 'marquee-tile']);
 
 mkdirSync(out, { recursive: true });
 
-for (const [name, width, height] of SHOTS) {
-  const page = resolve(pages, `${name === 'promo-tile' ? 'promo' : name}.html`);
+/** Read an image property via macOS sips, or null where sips is unavailable. */
+function imageProp(file, prop) {
+  try {
+    const text = execFileSync('sips', ['-g', prop, file], { encoding: 'utf8' });
+    return text.trim().split('\n').pop().split(':').pop().trim();
+  } catch {
+    return null;
+  }
+}
+
+for (const [name, source, width, height] of SHOTS) {
+  const page = resolve(pages, `${source}.html`);
   const png = resolve(out, `${name}.png`);
   execFileSync(
     chrome,
@@ -68,7 +89,24 @@ for (const [name, width, height] of SHOTS) {
     ],
     { stdio: 'ignore' },
   );
-  console.log(`screenshots: ${name}.png  ${width}x${height}`);
+
+  const actual = [imageProp(png, 'pixelWidth'), imageProp(png, 'pixelHeight')];
+  const alpha = imageProp(png, 'hasAlpha');
+  let note = `${width}x${height}`;
+
+  if (actual[0] && (actual[0] !== String(width) || actual[1] !== String(height))) {
+    console.error(`  ! ${name}.png is ${actual.join('x')}, expected ${width}x${height}`);
+    process.exitCode = 1;
+  }
+  if (MUST_BE_OPAQUE.has(name)) {
+    if (alpha === 'yes') {
+      console.error(`  ! ${name}.png has an alpha channel; the store requires 24-bit or JPEG`);
+      process.exitCode = 1;
+    } else if (alpha === 'no') {
+      note += ', 24-bit no alpha';
+    }
+  }
+  console.log(`screenshots: ${name}.png  ${note}`);
 }
 
 console.log(`\nWrote ${SHOTS.length} assets to docs/screenshots/`);

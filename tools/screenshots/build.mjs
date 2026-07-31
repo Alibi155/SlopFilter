@@ -340,6 +340,73 @@ const promo = page(
 );
 writeFileSync(resolve(out, 'promo.html'), promo);
 
+/* ---------------------------------------------------------- marquee promo */
+/**
+ * 1400x560 marquee tile, used for featured placement in the store.
+ *
+ * Same palette, wordmark and card treatment as the small tile, laid out
+ * horizontally: the claim on the left, a miniature filtered feed on the right
+ * so the promise is shown rather than only asserted. The background is fully
+ * opaque, which is what makes Chrome emit a 24-bit PNG with no alpha channel —
+ * a store requirement for this asset.
+ */
+const marqueeMini = (post, { dimmed }) => `
+  <div class="mq-card${dimmed ? ' dim' : ''}">
+    <div class="mq-actor">
+      <span class="mq-av" style="background:${post.avatar}"></span>
+      <span class="mq-nm">${esc(post.author)}</span>
+      ${dimmed ? `<span class="mq-pill" data-kind="${post.verdict.label === 'brag' ? 'brag' : 'ai'}">${esc(badgeText(post.verdict))}</span>` : ''}
+    </div>
+    <div class="mq-txt">${esc(post.text.split('\n').filter(Boolean).slice(0, 2).join(' '))}</div>
+  </div>`;
+
+const marquee = page(
+  'Marquee promo tile',
+  `*{box-sizing:border-box}
+   body{margin:0;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif}
+   .mq{width:1400px;height:560px;background:linear-gradient(135deg,#0a66c2 0%,#0b4d92 62%,#093f78 100%);color:#fff;display:flex;align-items:center;gap:56px;padding:0 68px;overflow:hidden;position:relative}
+   .mq::after{content:'';position:absolute;right:-160px;bottom:-260px;width:620px;height:620px;border-radius:50%;background:rgba(255,255,255,.055)}
+   .mq::before{content:'';position:absolute;left:-190px;top:-250px;width:460px;height:460px;border-radius:50%;background:rgba(255,255,255,.04)}
+   .mq-left{position:relative;z-index:1;width:660px;flex:0 0 auto}
+   .mq-brand{display:flex;align-items:center;gap:14px;margin-bottom:30px}
+   .mq-brand svg{width:56px;height:56px;border-radius:13px;display:block}
+   .mq-wm{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+   .mq-wm span{display:block;font-size:14px;font-weight:600;opacity:.8;letter-spacing:0}
+   .mq-hl{font-size:57px;font-weight:800;letter-spacing:-.026em;line-height:1.06;margin:0 0 20px}
+   .mq-sub{font-size:19px;line-height:1.45;opacity:.9;margin:0 0 26px;font-weight:500;max-width:560px}
+   .mq-meta{display:flex;gap:10px;flex-wrap:wrap}
+   .mq-tag{border:1px solid rgba(255,255,255,.34);border-radius:99px;padding:6px 15px;font-size:13.5px;font-weight:700;letter-spacing:.01em}
+   .mq-right{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;gap:12px}
+   .mq-card{background:rgba(255,255,255,.135);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:14px 16px}
+   .mq-card.dim{opacity:.44}
+   .mq-actor{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+   .mq-av{width:24px;height:24px;border-radius:50%;flex:0 0 auto;display:block}
+   .mq-nm{font-size:14px;font-weight:700}
+   /* The badge demonstrates the product, so it keeps full strength even on a
+      dimmed card — same reasoning as the small tile. */
+   .mq-pill{margin-left:auto;background:#fff;color:#0a66c2;border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:800;opacity:1}
+   .mq-pill[data-kind='brag']{color:#a8451a}
+   .mq-txt{font-size:13px;line-height:1.5;opacity:.95}`,
+  `<div class="mq">
+     <div class="mq-left">
+       <div class="mq-brand">${iconSvg}<div class="mq-wm">SlopFilter<span>for LinkedIn</span></div></div>
+       <h1 class="mq-hl">Get rid of AI slop on LinkedIn</h1>
+       <p class="mq-sub">Greyed out, never hidden — and it tells you exactly why. One click teaches it what you consider slop.</p>
+       <div class="mq-meta">
+         <span class="mq-tag">100% on your device</span>
+         <span class="mq-tag">No account, no tracking</span>
+         <span class="mq-tag">Open source</span>
+       </div>
+     </div>
+     <div class="mq-right">
+       ${marqueeMini(JUDGED[0], { dimmed: true })}
+       ${marqueeMini(JUDGED[1], { dimmed: false })}
+       ${marqueeMini(JUDGED[2], { dimmed: true })}
+     </div>
+   </div>`,
+);
+writeFileSync(resolve(out, 'marquee.html'), marquee);
+
 console.log('scores used in the screenshots (real engine output):');
 for (const p of JUDGED) {
   console.log(
