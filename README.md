@@ -83,7 +83,7 @@ You can also add your own keyword rules, at three strengths, in the extension's 
 
 ```bash
 npm install
-npm test          # 57 tests
+npm test          # 64 tests
 npm run lint      # eslint + prettier
 npm run typecheck
 npm run build     # -> dist/
