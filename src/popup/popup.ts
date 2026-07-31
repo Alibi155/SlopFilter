@@ -1,6 +1,6 @@
 import { ALPHA_FULL_AT, blendFactor } from '../engine/score';
 import type { DisplayMode } from '../storage/schema';
-import { getModel, getSettings, getStats, setSettings } from '../storage/store';
+import { getHealth, getModel, getSettings, getStats, setSettings } from '../storage/store';
 
 /**
  * Popup: the controls worth reaching in one click. Anything that needs typing
@@ -46,27 +46,28 @@ async function renderStats(): Promise<void> {
 }
 
 /**
- * Ask the active tab whether it can still see posts.
+ * Report whether the filter can still see posts.
  *
  * Reported rather than hidden: if LinkedIn changes its markup, the honest
  * failure mode is telling the user the filter is blind, not looking idle.
  *
- * No `tabs` permission is needed here. Chrome populates `tab.url` only for tabs
- * the extension already has host permission for, so a LinkedIn tab resolves and
- * every other tab reads as empty — which is exactly the check we want.
+ * This reads what the content script last observed rather than inspecting the
+ * active tab. Checking the tab's URL would require host access to linkedin.com
+ * that the extension deliberately does not request, and the observation is the
+ * better signal regardless — it reports what the selectors actually matched
+ * instead of what a URL implies they should have.
  */
 async function renderHealth(): Promise<void> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const url = tab?.url ?? '';
-  if (!url.startsWith('https://www.linkedin.com/feed')) {
+  const { at, postsFound } = await getHealth();
+
+  if (at === 0) {
     health.textContent = 'Open your LinkedIn feed to see SlopFilter at work.';
     health.hidden = false;
     return;
   }
-  const stats = await getStats();
-  if (stats.scanned === 0) {
+  if (postsFound === 0) {
     health.textContent =
-      'No posts recognised yet. If this persists, LinkedIn may have changed its layout — please open an issue.';
+      'No posts recognised on the last scan. If this persists, LinkedIn may have changed its layout — please open an issue.';
     health.hidden = false;
   }
 }

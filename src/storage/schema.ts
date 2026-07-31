@@ -37,6 +37,23 @@ export interface Stats {
 export const DEFAULT_STATS: Stats = { scanned: 0, flagged: 0, corrections: 0 };
 
 /**
+ * What the content script saw the last time it ran.
+ *
+ * The popup cannot inspect the active tab — that would need host access it
+ * deliberately does not have — so the content script reports its own state here
+ * instead. This is the better signal anyway: it reflects what the selectors
+ * actually matched rather than what the URL implies.
+ */
+export interface Health {
+  /** Epoch millis of the last scan, or 0 if the content script never ran. */
+  at: number;
+  /** Post containers the selectors recognised. Zero here means DOM breakage. */
+  postsFound: number;
+}
+
+export const DEFAULT_HEALTH: Health = { at: 0, postsFound: 0 };
+
+/**
  * Cap on the stored feedback log.
  *
  * Bounded so `chrome.storage.local` cannot grow without limit; the oldest
@@ -52,6 +69,7 @@ export interface StorageShape {
   stats: Stats;
   /** Per-post user overrides, keyed by URN: 1 = slop, 0 = not slop. */
   overrides: Record<string, 0 | 1>;
+  health: Health;
 }
 
 export type StorageKey = keyof StorageShape;

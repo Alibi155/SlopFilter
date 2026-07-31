@@ -25,19 +25,21 @@ stored trace, and that trace stays on your machine.
 
 - No data is sent to any server, including ours. There is none.
 - No analytics, telemetry, crash reporting, or advertising identifiers.
-- No reading or modifying any site other than `linkedin.com`.
+- No reading or modifying anything outside `linkedin.com/feed/*` — not even the rest of LinkedIn.
 - No access to your LinkedIn account, messages, connections, or credentials.
 - Nothing is shared with or sold to third parties.
 
 ## Permissions, and why each is needed
 
-| Permission                   | Why                                                       |
-| ---------------------------- | --------------------------------------------------------- |
-| `storage`                    | Save your settings and the model on your device.          |
-| `https://www.linkedin.com/*` | Read post text on your feed in order to score and dim it. |
+| Permission                        | Why                                                       |
+| --------------------------------- | --------------------------------------------------------- |
+| `storage`                         | Save your settings and the model on your device.          |
+| Content script on `/feed/*` pages | Read post text on your feed in order to score and dim it. |
 
-There is deliberately no host permission for any other origin, which means the extension cannot make
-network requests even if its code were changed to try.
+The extension requests **no host permissions at all**. Its entire reach is the content script's
+match pattern, `https://www.linkedin.com/feed/*` — so it cannot touch your LinkedIn messages,
+profile, or job pages, let alone any other site. It also has no permission to make network
+requests, which is why the claims above are structural rather than a promise.
 
 ## Deleting your data
 

@@ -177,3 +177,22 @@ describe('content script on a feed page', () => {
     expect(added.querySelector('.sf-chip')!.textContent).toContain('Brag');
   });
 });
+
+describe('health reporting', () => {
+  it('records what the selectors matched, so the popup needs no tab access', async () => {
+    await import('../src/content/index');
+    await settle();
+
+    const health = storage.health as { at: number; postsFound: number };
+    expect(health.postsFound).toBe(4);
+    expect(health.at).toBeGreaterThan(0);
+  });
+
+  it('reports zero when the markup stops being recognisable', async () => {
+    document.body.innerHTML = '<div>redesigned beyond recognition</div>';
+    await import('../src/content/index');
+    await settle();
+
+    expect((storage.health as { postsFound: number }).postsFound).toBe(0);
+  });
+});

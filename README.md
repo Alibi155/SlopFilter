@@ -94,7 +94,7 @@ You can also add your own keyword rules, at three strengths, in the extension's 
 
 ```bash
 npm install
-npm test          # 66 tests
+npm test          # 69 tests
 npm run lint      # eslint + prettier
 npm run typecheck
 npm run build     # -> dist/
@@ -146,8 +146,9 @@ tree instead, which is why it exists rather than a one-liner.
 
 ## Privacy
 
-See [PRIVACY.md](PRIVACY.md). Short version: the extension asks for `storage` and read access to
-`linkedin.com` pages, has no network permission, and sends nothing anywhere.
+See [PRIVACY.md](PRIVACY.md). Short version: the extension asks for `storage` and nothing else.
+It declares **no host permissions**; its whole reach is the content script's match pattern,
+`https://www.linkedin.com/feed/*`. No network permission, so it sends nothing anywhere.
 
 ## A note on LinkedIn's terms
 

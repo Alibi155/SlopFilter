@@ -4,7 +4,14 @@ import { scorePost } from '../engine/score';
 import type { ModelState, PostFeatures, Verdict } from '../engine/types';
 import { recordFeedback } from '../storage/feedback';
 import type { Settings } from '../storage/schema';
-import { bumpStats, getModel, getOverrides, getSettings, onChange } from '../storage/store';
+import {
+  bumpStats,
+  getModel,
+  getOverrides,
+  getSettings,
+  onChange,
+  setHealth,
+} from '../storage/store';
 import { decorate, undecorate, type FeedbackAction } from './decorate';
 import { extractPost, isScorable } from './extract';
 import { findFeedRoot, findPosts, isFeedPage } from './selectors';
@@ -81,6 +88,27 @@ function rescoreAll(): void {
   }
 }
 
+/** Last health write, so a mutation-heavy feed does not hammer storage. */
+let healthWrittenAt = 0;
+let lastPostsFound = -1;
+const HEALTH_INTERVAL_MS = 30_000;
+
+/**
+ * Tell the popup what we can actually see.
+ *
+ * Written on a timer rather than every scan — LinkedIn mutates constantly — but
+ * always immediately when the count crosses to or from zero, because that
+ * transition is the one that means the selectors have broken.
+ */
+function reportHealth(postsFound: number): void {
+  const now = Date.now();
+  const crossedZero = (postsFound === 0) !== (lastPostsFound === 0);
+  if (!crossedZero && now - healthWrittenAt < HEALTH_INTERVAL_MS) return;
+  healthWrittenAt = now;
+  lastPostsFound = postsFound;
+  void setHealth({ at: now, postsFound });
+}
+
 /** Score and decorate any posts we have not seen yet. */
 function scan(): void {
   if (!settings.enabled || !isFeedPage()) return;
@@ -88,7 +116,10 @@ function scan(): void {
   let scanned = 0;
   let flagged = 0;
 
-  for (const element of findPosts(document)) {
+  const found = findPosts(document);
+  reportHealth(found.length);
+
+  for (const element of found) {
     if (element.hasAttribute(PROCESSED_ATTR)) continue;
 
     const post = extractPost(element);

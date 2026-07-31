@@ -1,8 +1,10 @@
 import { emptyModel } from '../engine/classifier';
 import type { ModelState } from '../engine/types';
 import {
+  DEFAULT_HEALTH,
   DEFAULT_SETTINGS,
   DEFAULT_STATS,
+  type Health,
   type Settings,
   type Stats,
   type StorageShape,
@@ -24,6 +26,7 @@ const DEFAULTS: StorageShape = {
   feedback: [],
   stats: DEFAULT_STATS,
   overrides: {},
+  health: DEFAULT_HEALTH,
 };
 
 async function readKey<K extends keyof StorageShape>(key: K): Promise<StorageShape[K]> {
@@ -83,6 +86,14 @@ export async function bumpStats(patch: Partial<Stats>): Promise<void> {
       corrections: current.corrections + (patch.corrections ?? 0),
     },
   });
+}
+
+export async function getHealth(): Promise<Health> {
+  return { ...DEFAULT_HEALTH, ...(await readKey('health')) };
+}
+
+export async function setHealth(health: Health): Promise<void> {
+  await chrome.storage.local.set({ health });
 }
 
 /** Wipe the learned model, feedback log, overrides and stats. Settings survive. */

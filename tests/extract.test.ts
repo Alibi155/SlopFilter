@@ -141,3 +141,22 @@ describe('feedHealth', () => {
     expect(feedHealth(document).postsFound).toBe(0);
   });
 });
+
+describe('manifest permissions', () => {
+  it('requests storage only, with host access scoped to the feed', () => {
+    // The extension must never regain broad linkedin.com access: the content
+    // script's match pattern is the whole of its reach, and the popup reads
+    // health from storage rather than inspecting the active tab.
+    const manifest = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'public/manifest.json'), 'utf8'),
+    ) as {
+      permissions: string[];
+      host_permissions?: string[];
+      content_scripts: { matches: string[] }[];
+    };
+
+    expect(manifest.permissions).toEqual(['storage']);
+    expect(manifest.host_permissions).toBeUndefined();
+    expect(manifest.content_scripts[0]!.matches).toEqual(['https://www.linkedin.com/feed/*']);
+  });
+});
