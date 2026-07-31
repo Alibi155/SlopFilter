@@ -98,7 +98,7 @@ function textOf(element: Element | null): string {
  * The post author's profile or company slug.
  *
  * The redesign has no author-specific class, and a post can link to several
- * profiles — "Johannes Jeub and 74 others follow this page" sits above the
+ * profiles — "<some contact> and 74 others follow this page" sits above the
  * author's own name. The author is the one linked *most often* within the post
  * (avatar, name and control menu all point at them), which holds regardless of
  * markup or interface language.
