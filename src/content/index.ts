@@ -51,14 +51,15 @@ function optionsFor(post: PostFeatures, verdict: Verdict) {
     mode: settings.mode,
     showBadge: settings.showBadge,
     showFlagAffordance: settings.showFlagAffordance,
-    cleared: overrides[post.urn] === 0,
+    override: overrides[post.urn],
     onFeedback: (action: FeedbackAction) => handleFeedback(post, verdict, action),
   };
 }
 
 /** Whether this post should be showing a chip under the current settings. */
 function chipExpected(entry: Tracked): boolean {
-  const flagged = entry.verdict.label !== 'clean' && overrides[entry.post.urn] !== 0;
+  const override = overrides[entry.post.urn];
+  const flagged = override === 1 || (override !== 0 && entry.verdict.label !== 'clean');
   return flagged ? settings.showBadge : settings.showFlagAffordance;
 }
 

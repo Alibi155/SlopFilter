@@ -125,9 +125,8 @@ describe('content script on a feed page', () => {
     await settle();
 
     const clean = findPosts(document)[1]!;
+    // One click: the control says "Slop?", so clicking it is the answer.
     clean.querySelector<HTMLButtonElement>('.sf-chip--quiet')!.click();
-    const buttons = [...clean.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')];
-    buttons.find((button) => button.textContent === 'This is slop')!.click();
     await settle();
 
     expect(storage.overrides).toEqual({ 'sf:key:CdCldOhmY8myQA6G6rMb': 1 });
@@ -241,44 +240,81 @@ describe('surviving LinkedIn re-rendering a post', () => {
   });
 });
 
-describe('feedback gives visible confirmation', () => {
-  async function openPanelOn(selector: string) {
+describe('feedback changes what the user sees, in one or two clicks', () => {
+  it('greys out a clean post the user marks as slop, in a single click', async () => {
     await import('../src/content/index');
     await settle();
-    const post = document.querySelector(selector)!;
-    post.querySelector<HTMLButtonElement>('.sf-chip')!.click();
-    return post;
-  }
 
-  function press(post: Element, label: string) {
-    const button = [...post.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')].find(
-      (b) => b.textContent === label,
-    );
-    expect(button, `no "${label}" button`).toBeDefined();
-    button!.click();
-  }
+    const post = document.querySelector('[data-sf-state="clean"]')!;
+    const chip = post.querySelector<HTMLButtonElement>('.sf-chip--quiet')!;
+    expect(chip.textContent).toBe('Slop?');
 
-  it('keeps the panel open and confirms after "This is slop"', async () => {
-    const post = await openPanelOn('[data-sf-state="clean"]');
-    press(post, 'This is slop');
+    chip.click();
     await settle();
 
-    // The user's own click triggers a re-render; if that discards the panel,
-    // a post that was already dimmed shows no response at all.
-    const panel = post.querySelector<HTMLElement>('.sf-panel')!;
-    expect(panel, 'panel was destroyed by the re-render').not.toBeNull();
-    expect(panel.hidden, 'panel snapped shut').toBe(false);
-    expect(panel.querySelector('.sf-panel__status')!.textContent).toMatch(/learning/i);
+    // The whole point: the user's ruling has to win over the score, or marking
+    // a post that scored clean does nothing visible at all.
+    expect(post.getAttribute('data-sf-state'), 'post did not grey out').toBe('flagged');
+    expect(post.querySelector('.sf-chip')!.textContent).toBe('Marked slop');
+    expect(storage.overrides).toEqual({ 'sf:key:CdCldOhmY8myQA6G6rMb': 1 });
   });
 
-  it('keeps the panel open and confirms after "This was no slop"', async () => {
-    const post = await openPanelOn('[data-sf-state="flagged"]');
-    press(post, 'This was no slop');
+  it('un-greys a flagged post and closes the panel on "This was no slop"', async () => {
+    await import('../src/content/index');
+    await settle();
+
+    const post = document.querySelector('[data-sf-state="flagged"]')!;
+    post.querySelector<HTMLButtonElement>('.sf-chip')!.click();
+    expect(post.querySelector<HTMLElement>('.sf-panel')!.hidden).toBe(false);
+
+    [...post.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')]
+      .find((b) => b.textContent === 'This was no slop')!
+      .click();
     await settle();
 
     expect(post.getAttribute('data-sf-state')).toBe('cleared');
-    const panel = post.querySelector<HTMLElement>('.sf-panel')!;
-    expect(panel.hidden, 'panel snapped shut').toBe(false);
-    expect(panel.querySelector('.sf-panel__status')!.textContent).toMatch(/learning/i);
+    const panel = post.querySelector<HTMLElement>('.sf-panel');
+    expect(panel === null || panel.hidden, 'panel stayed open').toBe(true);
+  });
+
+  it('closes the panel on "This is slop" and keeps the post greyed', async () => {
+    await import('../src/content/index');
+    await settle();
+
+    const post = document.querySelector('[data-sf-state="flagged"]')!;
+    post.querySelector<HTMLButtonElement>('.sf-chip')!.click();
+    [...post.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')]
+      .find((b) => b.textContent === 'This is slop')!
+      .click();
+    await settle();
+
+    expect(post.getAttribute('data-sf-state')).toBe('flagged');
+    const panel = post.querySelector<HTMLElement>('.sf-panel');
+    expect(panel === null || panel.hidden, 'panel stayed open').toBe(true);
+  });
+
+  it('lets the user undo a mark, and keeps the panel open across unrelated re-renders', async () => {
+    await import('../src/content/index');
+    await settle();
+
+    const post = document.querySelector('[data-sf-state="clean"]')!;
+    post.querySelector<HTMLButtonElement>('.sf-chip--quiet')!.click();
+    await settle();
+    expect(post.getAttribute('data-sf-state')).toBe('flagged');
+
+    // Now reversible through the panel, and an unrelated feed mutation must
+    // not snap that panel shut while it is being read.
+    post.querySelector<HTMLButtonElement>('.sf-chip')!.click();
+    document
+      .querySelector('[componentkey^="container-update-list"]')!
+      .appendChild(document.createElement('div'));
+    await settle();
+    expect(post.querySelector<HTMLElement>('.sf-panel')!.hidden, 'panel snapped shut').toBe(false);
+
+    [...post.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')]
+      .find((b) => b.textContent === 'This was no slop')!
+      .click();
+    await settle();
+    expect(post.getAttribute('data-sf-state')).toBe('cleared');
   });
 });

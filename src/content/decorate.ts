@@ -9,8 +9,13 @@ export interface DecorateOptions {
   mode: DisplayMode;
   showBadge: boolean;
   showFlagAffordance: boolean;
-  /** True when the user has already ruled on this post. */
-  cleared: boolean;
+  /**
+   * The user's own ruling on this post, if they have given one.
+   * 1 = they called it slop, 0 = they said it was not. Overrides the verdict
+   * in both directions — a post the user marked stays greyed out even when the
+   * score alone would not have flagged it.
+   */
+  override: 0 | 1 | undefined;
   onFeedback: (action: FeedbackAction) => void | Promise<void>;
 }
 
@@ -44,26 +49,18 @@ export function decorationIntact(element: Element, chipExpected: boolean): boole
 }
 
 /**
- * Panel state that has to outlive a re-render.
+ * Whether the panel is currently open.
  *
- * Giving feedback writes to storage, which re-scores and re-decorates the post
- * — so the click that opens the panel is also what would destroy it. Carrying
- * these across means the panel stays put and the confirmation stays readable.
+ * Re-scoring re-decorates the post, so an unrelated re-render would otherwise
+ * snap a panel shut while the user is reading it. Giving feedback deliberately
+ * closes it first, so that intent carries across too.
  */
-interface PanelState {
-  open: boolean;
-  status: string;
-}
-
-function readPanelState(host: HTMLElement): PanelState {
+function panelIsOpen(host: HTMLElement): boolean {
   const panel = host.querySelector<HTMLElement>(':scope > .sf-panel');
-  return {
-    open: panel !== null && !panel.hidden,
-    status: panel?.querySelector('.sf-panel__status')?.textContent ?? '',
-  };
+  return panel !== null && !panel.hidden;
 }
 
-function buildPanel(verdict: Verdict, options: DecorateOptions, carried: PanelState): HTMLElement {
+function buildPanel(verdict: Verdict, options: DecorateOptions, title: string): HTMLElement {
   const panel = el('div', 'sf-panel');
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
@@ -73,15 +70,7 @@ function buildPanel(verdict: Verdict, options: DecorateOptions, carried: PanelSt
   // the panel can also open the post or trigger a re-render underneath us.
   panel.addEventListener('click', (event) => event.stopPropagation());
 
-  panel.appendChild(
-    el(
-      'p',
-      'sf-panel__title',
-      verdict.label === 'clean'
-        ? 'This post was not flagged'
-        : `Flagged as ${verdict.label === 'brag' ? 'bragging slop' : 'AI slop'}`,
-    ),
-  );
+  panel.appendChild(el('p', 'sf-panel__title', title));
 
   if (verdict.reasons.length > 0) {
     const list = el('ul', 'sf-panel__reasons');
@@ -113,17 +102,11 @@ function buildPanel(verdict: Verdict, options: DecorateOptions, carried: PanelSt
   );
   panel.appendChild(footer);
 
-  const status = el('p', 'sf-panel__status', carried.status);
-  status.hidden = carried.status.length === 0;
-  panel.appendChild(status);
-
   const submit = (action: FeedbackAction) => {
-    // Confirm synchronously, before awaiting the write. Storing feedback
-    // re-renders this post, and only state already on the panel survives that;
-    // a message set in the callback would land on a detached node.
-    status.textContent =
-      action === 'not-slop' ? 'Thanks — learning from that.' : 'Noted — learning from that.';
-    status.hidden = false;
+    // Close immediately. The post greying out or un-greying is the confirmation
+    // — a message inside a panel the user then has to dismiss made marking a
+    // post a three-click job.
+    panel.hidden = true;
     void Promise.resolve(options.onFeedback(action));
   };
   notSlop.addEventListener('click', () => submit('not-slop'));
@@ -146,33 +129,50 @@ export function decorate(
 ): void {
   const host = element as HTMLElement;
   // Read before undecorate: it is about to remove the panel we are reading.
-  const carried = readPanelState(host);
+  const wasOpen = panelIsOpen(host);
   undecorate(host);
 
-  const flagged = verdict.label !== 'clean' && !options.cleared;
-  host.setAttribute(STATE_ATTR, options.cleared ? 'cleared' : flagged ? 'flagged' : 'clean');
+  // The user's ruling wins over the score in both directions.
+  const flagged = options.override === 1 || (options.override !== 0 && verdict.label !== 'clean');
+  host.setAttribute(STATE_ATTR, options.override === 0 ? 'cleared' : flagged ? 'flagged' : 'clean');
   host.setAttribute(MODE_ATTR, options.mode);
 
   const wantsChip = flagged ? options.showBadge : options.showFlagAffordance;
   if (!wantsChip) return;
 
-  const chip = el(
-    'button',
-    flagged ? 'sf-chip' : 'sf-chip sf-chip--quiet',
-    flagged ? badgeText(verdict) : 'Slop?',
-  );
+  // A post the user marked themselves has no meaningful score to report.
+  const userMarked = options.override === 1 && verdict.label === 'clean';
+  const label = flagged ? (userMarked ? 'Marked slop' : badgeText(verdict)) : 'Slop?';
+
+  const chip = el('button', flagged ? 'sf-chip' : 'sf-chip sf-chip--quiet', label);
   chip.type = 'button';
   chip.dataset.sfKind = verdict.label === 'brag' ? 'brag' : 'ai';
-  chip.setAttribute('aria-expanded', 'false');
-  chip.setAttribute(
-    'aria-label',
-    flagged
-      ? `${badgeText(verdict)} — from ${post.authorName || 'this author'}. Show why.`
-      : 'Mark this post as slop',
-  );
 
-  const panel = buildPanel(verdict, options, carried);
-  if (carried.open) {
+  if (!flagged) {
+    // One click, not three. The control says "Slop?" — clicking it is the
+    // answer, so there is nothing to open and nothing to dismiss. Reversible
+    // straight away: the post then carries a chip that opens the panel.
+    chip.setAttribute('aria-label', 'Mark this post as slop');
+    chip.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      void Promise.resolve(options.onFeedback('slop'));
+    });
+    host.append(chip);
+    return;
+  }
+
+  chip.setAttribute('aria-expanded', 'false');
+  chip.setAttribute('aria-label', `${label} — from ${post.authorName || 'this author'}. Show why.`);
+
+  const panel = buildPanel(
+    verdict,
+    options,
+    userMarked
+      ? 'You marked this as slop'
+      : `Flagged as ${verdict.label === 'brag' ? 'bragging slop' : 'AI slop'}`,
+  );
+  if (wasOpen) {
     panel.hidden = false;
     chip.setAttribute('aria-expanded', 'true');
   }
