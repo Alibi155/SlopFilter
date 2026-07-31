@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { findPosts } from '../src/content/selectors';
 
 const html = readFileSync(resolve(process.cwd(), 'tests/fixtures/feed-post.html'), 'utf8');
 
@@ -61,7 +62,7 @@ describe('content script on a feed page', () => {
     await import('../src/content/index');
     await settle();
 
-    const posts = document.querySelectorAll('.feed-shared-update-v2');
+    const posts = findPosts(document);
     expect(posts[0]!.getAttribute('data-sf-state')).toBe('flagged');
     expect(posts[1]!.getAttribute('data-sf-state')).toBe('clean');
   });
@@ -102,7 +103,7 @@ describe('content script on a feed page', () => {
     await settle();
 
     expect(post.getAttribute('data-sf-state')).toBe('cleared');
-    expect(storage.overrides).toEqual({ 'urn:li:activity:7100000000000000001': 0 });
+    expect(storage.overrides).toEqual({ 'sf:key:cF7f8Soh-cB2SgNUpFjb': 0 });
     expect((storage.model as { labelCount: number }).labelCount).toBe(1);
     expect((storage.feedback as unknown[]).length).toBe(1);
   });
@@ -111,13 +112,13 @@ describe('content script on a feed page', () => {
     await import('../src/content/index');
     await settle();
 
-    const clean = document.querySelectorAll('.feed-shared-update-v2')[1]!;
+    const clean = findPosts(document)[1]!;
     clean.querySelector<HTMLButtonElement>('.sf-chip--quiet')!.click();
     const buttons = [...clean.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')];
     buttons.find((button) => button.textContent === 'This is slop')!.click();
     await settle();
 
-    expect(storage.overrides).toEqual({ 'urn:li:activity:7100000000000000002': 1 });
+    expect(storage.overrides).toEqual({ 'sf:key:CdCldOhmY8myQA6G6rMb': 1 });
     expect((storage.feedback as { label: number }[])[0]!.label).toBe(1);
   });
 
@@ -125,7 +126,7 @@ describe('content script on a feed page', () => {
     await import('../src/content/index');
     await settle();
 
-    const short = document.querySelector('[data-urn$="004"]')!;
+    const short = findPosts(document)[2]!;
     expect(short.getAttribute('data-sf-seen')).toBe('skip');
     expect(short.querySelector('.sf-chip')).toBeNull();
   });
@@ -151,9 +152,7 @@ describe('content script on a feed page', () => {
     expect(document.querySelector('.sf-dim-target')).toBeNull();
     expect(document.querySelector('[data-sf-state]')).toBeNull();
     // LinkedIn's own markup is left exactly as it was found.
-    expect(document.querySelector('.feed-shared-update-v2')!.textContent).toContain(
-      'Three lessons from scaling',
-    );
+    expect(findPosts(document)[0]!.textContent).toContain('Three lessons from scaling');
   });
 
   it('scores newly appended posts as the feed grows', async () => {
@@ -162,11 +161,10 @@ describe('content script on a feed page', () => {
     const before = document.querySelectorAll('[data-sf-state]').length;
 
     const added = document.createElement('div');
-    added.className = 'feed-shared-update-v2';
-    added.setAttribute('data-urn', 'urn:li:activity:7100000000000000009');
+    added.setAttribute('componentkey', 'expandedNEWPOST9FeedType_MAIN_FEED_RELEVANCE');
     added.innerHTML =
-      '<div class="update-components-text"><span class="break-words">Humbled and honored to share that I have been named a Top Voice. Beyond grateful to everyone who supported me on this journey.</span></div>';
-    document.querySelector('.scaffold-finite-scroll__content')!.appendChild(added);
+      '<div data-testid="expandable-text-box">Humbled and honored to share that I have been named a Top Voice. Beyond grateful to everyone who supported me on this journey.</div>';
+    document.querySelector('[componentkey^="container-update-list"]')!.appendChild(added);
     await settle();
 
     expect(document.querySelectorAll('[data-sf-state]').length).toBeGreaterThan(before);

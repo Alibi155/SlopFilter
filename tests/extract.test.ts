@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { extractPost, isScorable } from '../src/content/extract';
-import { feedHealth, findFeedRoot, findPosts } from '../src/content/selectors';
+import { extractPost, isScorable, readText } from '../src/content/extract';
+import { feedHealth, findFeedRoot, findPosts, postKeyId } from '../src/content/selectors';
 import { scorePost } from '../src/engine/score';
 import { emptyModel } from '../src/engine/classifier';
 
@@ -17,53 +17,89 @@ beforeEach(() => {
 });
 
 describe('findPosts', () => {
-  it('finds every post container in the fixture', () => {
+  it('finds redesign and legacy posts alike, without double-counting', () => {
+    // Posts 0-2 nest two identically-keyed divs; only the outer one is a post.
     expect(posts).toHaveLength(4);
   });
 
-  it('finds the scrolling feed root', () => {
-    expect(findFeedRoot(document).className).toContain('scaffold-finite-scroll__content');
+  it('finds the redesign feed root', () => {
+    expect(findFeedRoot(document).getAttribute('data-testid')).toBe('mainFeed');
   });
 
-  it('falls back to the body when the feed root is absent', () => {
+  it('falls back to the body when nothing is recognisable', () => {
     document.body.innerHTML = '<div>nothing familiar</div>';
     expect(findFeedRoot(document)).toBe(document.body);
   });
 });
 
-describe('extractPost', () => {
-  it('reads text, author and hashtags from a slop post', () => {
-    const post = extractPost(posts[0]!);
-    expect(post.urn).toBe('urn:li:activity:7100000000000000001');
-    expect(post.authorName).toBe('Jane Example');
-    expect(post.authorId).toBe('jane-example-1234');
-    expect(post.hashtags).toEqual(['leadership', 'growth', 'startups']);
-    expect(post.hasMedia).toBe(true);
-    expect(post.isPromoted).toBe(false);
+describe('postKeyId', () => {
+  it('extracts the stable id from a componentkey', () => {
+    expect(postKeyId(posts[0]!)).toBe('cF7f8Soh-cB2SgNUpFjb');
   });
 
-  it('strips the trailing "see more" affordance', () => {
+  it('returns null for legacy markup', () => {
+    expect(postKeyId(posts[3]!)).toBeNull();
+  });
+});
+
+describe('readText', () => {
+  it('turns <br> into real line breaks', () => {
+    document.body.innerHTML = '<div id="t">one<br>two<br><br>three</div>';
+    expect(readText(document.getElementById('t'))).toBe('one\ntwo\n\nthree');
+  });
+
+  it('skips the "see more" button', () => {
+    document.body.innerHTML = '<div id="t">body text<button>… mehr</button></div>';
+    expect(readText(document.getElementById('t'))).toBe('body text');
+  });
+
+  it('treats block elements as paragraph breaks', () => {
+    document.body.innerHTML = '<div id="t"><p>one</p><p>two</p></div>';
+    expect(readText(document.getElementById('t'))).toBe('one\n\ntwo');
+  });
+
+  it('returns empty string for a missing element', () => {
+    expect(readText(null)).toBe('');
+  });
+});
+
+describe('extractPost', () => {
+  it('reads text, author and hashtags from a redesign post', () => {
     const post = extractPost(posts[0]!);
-    expect(post.text).not.toMatch(/see more/i);
+    expect(post.urn).toBe('sf:key:cF7f8Soh-cB2SgNUpFjb');
+    expect(post.authorId).toBe('example-growth');
+    expect(post.hashtags).toEqual(['leadership', 'growth', 'startups']);
+    expect(post.hasMedia).toBe(true);
+  });
+
+  it('preserves the line structure the rules depend on', () => {
+    // The whole point of readText: textContent would yield a single line here,
+    // silently disabling every line-based rule.
+    const post = extractPost(posts[0]!);
+    expect(post.lines.length).toBeGreaterThan(4);
+    expect(post.lines.some((line) => line.startsWith('💡'))).toBe(true);
+  });
+
+  it('strips the trailing "… mehr" affordance', () => {
+    const post = extractPost(posts[0]!);
+    expect(post.text).not.toMatch(/mehr|see more/i);
     expect(post.text.trimEnd()).toMatch(/#startups$/);
   });
 
-  it('detects reposts and promoted posts', () => {
+  it('picks the author over profiles merely mentioned in the header', () => {
+    // "Johannes Example and 74 others follow this page" appears above the
+    // actual author, so first-link-wins would get this wrong.
     const post = extractPost(posts[1]!);
-    expect(post.isRepost).toBe(true);
+    expect(post.authorId).toBe('example-corp');
     expect(post.isPromoted).toBe(true);
-    expect(post.authorId).toBe('acme-corp');
   });
 
-  it('falls back to a content hash when there is no URN', () => {
-    const post = extractPost(posts[2]!);
-    expect(post.urn).toMatch(/^sf:hash:[a-z0-9]+$/);
-  });
-
-  it('gives the same hash for the same content and a different one otherwise', () => {
-    const again = extractPost(posts[2]!);
-    expect(again.urn).toBe(extractPost(posts[2]!).urn);
-    expect(again.urn).not.toBe(extractPost(posts[0]!).urn);
+  it('handles legacy markup, URN and all', () => {
+    const post = extractPost(posts[3]!);
+    expect(post.urn).toBe('urn:li:activity:7100000000000000004');
+    expect(post.authorName).toBe('Jane Example');
+    expect(post.authorId).toBe('jane-example-1234');
+    expect(post.text).not.toMatch(/see more/i);
   });
 
   it('never throws on markup it does not recognise', () => {
@@ -76,7 +112,7 @@ describe('extractPost', () => {
 
 describe('isScorable', () => {
   it('skips posts with too little text to judge', () => {
-    expect(isScorable(extractPost(posts[3]!))).toBe(false);
+    expect(isScorable(extractPost(posts[2]!))).toBe(false);
     expect(isScorable(extractPost(posts[0]!))).toBe(true);
   });
 });
@@ -91,12 +127,16 @@ describe('end to end: DOM to verdict', () => {
     );
     expect(job.label).toBe('clean');
   });
+
+  it('flags the legacy humblebrag', () => {
+    const verdict = scorePost(extractPost(posts[3]!), emptyModel(), { threshold: 0.6 });
+    expect(verdict.label).toBe('brag');
+  });
 });
 
 describe('feedHealth', () => {
-  it('reports a broken selector set on a feed page with no recognisable posts', () => {
-    // jsdom's default URL is not a feed page, so health reports "not on feed".
-    expect(feedHealth(document).onFeedPage).toBe(false);
+  it('counts what it can see', () => {
+    expect(feedHealth(document).postsFound).toBe(4);
     document.body.innerHTML = '<div>redesigned beyond recognition</div>';
     expect(feedHealth(document).postsFound).toBe(0);
   });

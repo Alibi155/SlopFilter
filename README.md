@@ -46,8 +46,13 @@ construction, formulaic hooks ("Unpopular opinion:", "Let that sink in."), engag
 density, unnaturally even sentence lengths, and hashtag stuffing.
 
 **Bragging-slop signals** include announcement humblebrags ("Thrilled to announce…"), performative
-humility ("humbled and honored", "I don't usually post about this, but"), numbers flexes, and the
-story-with-a-moral template.
+humility ("humbled and honored", "I don't usually post about this, but"), numbers flexes, the
+story-with-a-moral template, and the hook→story→pitch pivot ("That is why we built…" followed by a
+tracked `lnkd.in` call to action).
+
+**English and German are both covered.** Every phrase list carries both languages and both are
+always active, since a German-language feed is full of English posts and vice versa. The structural
+rules — fake bold, emoji bullets, cadence, hashtag stuffing — are language-independent already.
 
 The rules are summed and squashed onto a 0–1 score by a saturating curve, so a long post cannot get
 flagged merely for being long.
@@ -86,11 +91,12 @@ npm run zip       # -> slopfilter-<version>.zip for the Web Store
 ```
 
 The scoring engine in `src/engine/` is pure — no DOM, no `chrome.*` — and is tested against a corpus
-of labelled posts in [`tests/fixtures/posts.ts`](tests/fixtures/posts.ts). It currently gets 30 of 31
-right with **zero false positives** on the genuine posts, including deliberately tricky ones (an
+of labelled posts in [`tests/fixtures/posts.ts`](tests/fixtures/posts.ts). It currently gets 37 of 38
+right with **zero false positives** on the 17 genuine posts, including deliberately tricky ones (an
 enthusiastic team-credit post, a technical writeup that uses em-dashes normally, a plainly-worded
-career change). Contributions to the corpus are the most useful contributions there are — if
-SlopFilter flags something it shouldn't, a fixture reproducing it is worth more than a bug report.
+career change, a substantive German post about a security incident). Contributions to the corpus are
+the most useful contributions there are — if SlopFilter flags something it shouldn't, a fixture
+reproducing it is worth more than a bug report.
 
 ### Layout
 
@@ -106,6 +112,25 @@ Every LinkedIn DOM assumption lives in [`src/content/selectors.ts`](src/content/
 changes its markup without notice, so each lookup is a chain of fallbacks, and the popup reports
 "no posts recognised" instead of failing silently. **If SlopFilter stops flagging anything, that file
 is where to look first.**
+
+As of the 2026 redesign LinkedIn ships hashed class names (`_4633da7f`) and no `data-urn`, so the
+old `.feed-shared-update-v2[data-urn]` selectors match nothing. What the extension keys off now:
+
+| Hook                                            | Used for                                |
+| ----------------------------------------------- | --------------------------------------- |
+| `componentkey^="expanded"…"FeedType_MAIN_FEED"` | Post containers, and the stable post id |
+| `[data-testid="mainFeed"]`                      | The feed root to observe                |
+| `[data-testid="expandable-text-box"]`           | Post body text                          |
+| Most-repeated `/in/` or `/company/` link        | Post author                             |
+
+None of these carry localized text, so they work identically on a German and an English feed. The
+legacy selectors are kept behind the new ones for anyone still on an older rollout, and
+`tests/fixtures/feed-post.html` covers both.
+
+One subtlety worth knowing before touching extraction: LinkedIn separates paragraphs with `<br>`
+elements, which `textContent` drops entirely — collapsing a post into a single line and silently
+disabling every line-based rule. `readText()` in [`extract.ts`](src/content/extract.ts) walks the
+tree instead, which is why it exists rather than a one-liner.
 
 ## Privacy
 

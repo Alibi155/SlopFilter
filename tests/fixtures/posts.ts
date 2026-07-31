@@ -253,6 +253,64 @@ Grateful for the support along the way. On to the next challenge!`,
     true,
   ),
 
+  // ------------------------------------------------- German-language slop
+  slopAi(
+    'german emoji listicle',
+    `𝗗𝗶𝗲 𝟯 𝗙𝗲𝗵𝗹𝗲𝗿, 𝗱𝗶𝗲 𝟵𝟬% 𝗮𝗹𝗹𝗲𝗿 𝗙ü𝗵𝗿𝘂𝗻𝗴𝘀𝗸𝗿ä𝗳𝘁𝗲 𝗺𝗮𝗰𝗵𝗲𝗻
+
+Unpopuläre Meinung: Dein Titel macht dich nicht zur Führungskraft.
+
+✅ Zuhören statt reden
+🚀 Vertrauen statt Kontrolle
+💡 Fragen statt Antworten
+
+Es geht nicht um Macht. Es geht um Verantwortung.
+
+Wie siehst du das?
+
+#leadership #mindset #innovation #erfolg #karriere #business`,
+  ),
+  slopAi(
+    'german engagement bait',
+    `Hör auf zu scrollen.
+
+Ich habe 200 Bewerbungsgespräche geführt.
+
+Das hier ist mir aufgefallen.
+
+Die besten Kandidaten stellen mehr Fragen als sie beantworten.
+
+Sie reden nicht über Gehalt. Sie reden über Wirkung.
+
+Merk dir das.
+
+Folge mir für mehr Einblicke aus dem Recruiting.`,
+  ),
+  slopBrag(
+    'german announcement humblebrag',
+    `Ich freue mich sehr, bekannt zu geben, dass ich ab September die Leitung des Bereichs Data Science übernehme.
+
+Demütig und dankbar für das Vertrauen und für ein Team, das mich jeden Tag besser macht.
+
+Wer hätte das gedacht, als ich vor acht Jahren als Werkstudent angefangen habe.
+
+Das Beste kommt noch. 🚀`,
+  ),
+  slopBrag(
+    'promotional pivot with tracked link',
+    `This is the fall of the Library of Alexandria all over again 🫣
+
+AI labs are buying up rare books, cutting the binding off the spine, feeding the pages through a scanner, then shredding the paper. Once it is shredded, no reprint brings it back.
+
+Books printed before 2022 sell at a premium because they predate the flood of AI-generated text. Clean human writing is what every model is running short of.
+
+That scarcity is the point. Owning data no competitor can copy is what separates the models that win from the ones that fade.
+
+That is why we built ToneUp, an AI go-to-market engine trained on data earned by helping companies reach the right people.
+
+We are raising now. Learn more and earn bonus shares here: https://lnkd.in/dXXXXXXX`,
+  ),
+
   // ------------------------------------------------------------------ Clean
   clean(
     'plain technical question',
@@ -311,6 +369,24 @@ Memory went from 2GB after an hour to a flat 180MB.`,
   clean(
     'asking for recommendations',
     `Looking for recommendations on static analysis tools for Terraform that do not require sending plans to a vendor cloud. We are fine with paying, we are not fine with the data leaving our network.`,
+  ),
+  clean(
+    'german substantive post about a real incident',
+    `Am 25. und 26. Juli waren tausende geteilte Claude-Chats über Google auffindbar. Gehackt hat dafür niemand etwas. Den Seiten mit den Teilen-Links fehlte das kleine Signal, das einer Suchmaschine sagt, diese Seite gehört nicht in den Index.
+
+Laut den Berichten lagen darin Krypto-Schlüssel, Anfragen an Anwälte, Mitarbeiterbewertungen und interne Unterlagen.
+
+Der Teilen-Button fühlt sich an wie eine Mail an eine Person. In der Praxis ist er eine Veröffentlichung ohne Passwort. Wer den Link hat, ist drin.
+
+In den Einstellungen unter Datenschutz stehen deine geteilten Chats, bei Claude wie bei ChatGPT. Geh einmal durch, was davon noch offen ist.`,
+  ),
+  clean(
+    'german plain job posting',
+    `Wir suchen eine Backend-Entwicklerin in Köln. Go und Postgres, hybrid zwei Tage pro Woche, Gehaltsband steht in der Ausschreibung. Kein Take-Home-Test. Details auf unserer Karriereseite.`,
+  ),
+  clean(
+    'german technical writeup',
+    `Wir haben unseren cron-basierten Job-Runner durch eine Durable-Execution-Engine ersetzt. Die Migration hat drei Wochen gedauert, das meiste davon dafür, bestehende Jobs idempotent zu machen. Der Durchsatz ist unverändert, aber die On-Call-Alarme sind von etwa neun pro Woche auf einen gefallen.`,
   ),
   clean(
     'meeting notes style',

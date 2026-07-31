@@ -1,62 +1,84 @@
 <!--
-  A sanitized LinkedIn feed post, trimmed to the structure the extension relies
-  on. Names and content are invented; the class names and data attributes mirror
-  what LinkedIn actually renders, so this fixture is what catches a selector
-  regression before it reaches the browser.
+  Sanitized LinkedIn feed markup, trimmed to the structure the extension relies
+  on. Names and content are invented; the attributes mirror what LinkedIn
+  actually renders, so this fixture is what catches a selector regression before
+  it reaches the browser.
+
+  Posts 0-2 use the 2026 redesign: hashed class names, no data-urn, componentkey
+  as the only stable identifier, and <br> for line breaks. Post 3 uses the older
+  markup, to prove the fallback selectors still work for anyone not yet migrated.
 -->
-<div class="scaffold-finite-scroll__content">
-  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000001">
-    <div class="update-components-actor">
-      <a class="update-components-actor__meta-link" href="https://www.linkedin.com/in/jane-example-1234/">
-        <span class="update-components-actor__title">
-          <span aria-hidden="true">Jane Example</span>
-          <span class="visually-hidden">Jane Example</span>
-        </span>
-        <span class="update-components-actor__description">Growth Advisor · 3rd+</span>
-      </a>
-    </div>
-    <div class="feed-shared-update-v2__description-wrapper">
-      <div class="update-components-text">
-        <span class="break-words" dir="ltr">🚀 Three lessons from scaling to $2M ARR
-
-💡 Hire slow, fire fast
-✅ Talk to customers every single day
-
-It's not about the product. It's about the problem.
-
-Agree? #leadership #growth #startups…&nbsp;see more</span>
+<div data-testid="mainFeed">
+  <div componentkey="container-update-list_mainFeed">
+    <!-- 0: emoji-bulleted slop, German UI chrome, English body. -->
+    <div
+      componentkey="expandedcF7f8Soh-cB2SgNUpFjbFeedType_MAIN_FEED_RELEVANCE"
+      class="_4633da7f _926f6763"
+    >
+      <div componentkey="expandedcF7f8Soh-cB2SgNUpFjbFeedType_MAIN_FEED_RELEVANCE">
+        <div class="a1b2c3d4">
+          <a href="https://www.linkedin.com/company/example-growth/posts/" aria-label="Unternehmen anzeigen: Example Growth"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" /></a>
+          <a href="https://www.linkedin.com/company/example-growth/posts/" aria-label="Unternehmen anzeigen: Example Growth">Example Growth</a>
+          <a href="https://www.linkedin.com/company/example-growth/posts/">Kontaktieren Sie uns</a>
+          <span>5 Min. •</span>
+        </div>
+        <div data-testid="expandable-text-box">
+          🚀 Three lessons from scaling to $2M ARR<br /><br />💡 Hire slow, fire fast<br />✅ Talk
+          to customers every single day<br />🔥 Obsess over one metric<br /><br />It's not about
+          the product. It's about the problem.<br /><br />Agree? #leadership #growth
+          #startups<button class="f9146359">… mehr</button>
+        </div>
+        <img src="https://media.licdn.com/dms/image/x.png" alt="chart" />
       </div>
     </div>
-    <div class="update-components-image">
-      <img alt="chart" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" />
-    </div>
-  </div>
 
-  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000002">
-    <div class="update-components-header">Marcus Example reposted this</div>
-    <div class="update-components-actor">
-      <a class="update-components-actor__meta-link" href="https://www.linkedin.com/company/acme-corp/">
-        <span class="update-components-actor__title"><span aria-hidden="true">Acme Corp</span></span>
-        <span class="update-components-actor__description">Promoted</span>
-      </a>
+    <!-- 1: a promoted company post whose body is plain and informative. -->
+    <div componentkey="expandedCdCldOhmY8myQA6G6rMbFeedType_MAIN_FEED_RELEVANCE">
+      <div componentkey="expandedCdCldOhmY8myQA6G6rMbFeedType_MAIN_FEED_RELEVANCE">
+        <div>
+          <a href="https://www.linkedin.com/in/johannes-example-9586183a/">Johannes Example</a>
+          <a href="https://www.linkedin.com/in/paul-example/">Paul Example</a>
+          <span>und 74 weitere Kontakte folgen dieser Unternehmensseite</span>
+          <a href="https://www.linkedin.com/company/example-corp/posts/" aria-label="Unternehmen anzeigen: Example Corp">Example Corp</a>
+          <a href="https://www.linkedin.com/company/example-corp/posts/">535.244 Follower:innen</a>
+          <span>Anzeige</span>
+        </div>
+        <div data-testid="expandable-text-box">
+          We are hiring a backend engineer in Berlin. Go and Postgres, hybrid two days a week,
+          salary band published in the ad.
+        </div>
+      </div>
     </div>
-    <div class="update-components-text">
-      <span class="break-words" dir="ltr">We are hiring a backend engineer in Berlin. Go and Postgres, hybrid two days a week, salary band published in the ad.</span>
-    </div>
-  </div>
 
-  <!-- A post with no URN attribute, to exercise the content-hash fallback. -->
-  <div class="feed-shared-update-v2">
-    <div class="update-components-actor">
-      <span class="update-components-actor__title"><span aria-hidden="true">Anon Poster</span></span>
+    <!-- 2: German post, short enough to exercise the scorable-length floor. -->
+    <div componentkey="expandedJPKV36C0EYZWmloHCFoQFeedType_MAIN_FEED_RELEVANCE">
+      <div componentkey="expandedJPKV36C0EYZWmloHCFoQFeedType_MAIN_FEED_RELEVANCE">
+        <div>
+          <a href="https://www.linkedin.com/in/philipp-example/" aria-label="Profil von Philipp Example anzeigen">Philipp Example</a>
+          <a href="https://www.linkedin.com/in/philipp-example/">Philipp Example • 3.+</a>
+        </div>
+        <div data-testid="expandable-text-box">Danke!</div>
+      </div>
     </div>
-    <div class="update-components-text">
-      <span class="break-words" dir="ltr">A short update with enough characters in it to clear the scorable length floor.</span>
-    </div>
-  </div>
 
-  <!-- Too little text to score: a bare reaction card. -->
-  <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000004">
-    <div class="update-components-text"><span class="break-words" dir="ltr">Congrats!</span></div>
+    <!-- 3: legacy markup, pre-redesign. -->
+    <div class="feed-shared-update-v2" data-urn="urn:li:activity:7100000000000000004">
+      <div class="update-components-actor">
+        <a
+          class="update-components-actor__meta-link"
+          href="https://www.linkedin.com/in/jane-example-1234/"
+        >
+          <span class="update-components-actor__title">
+            <span aria-hidden="true">Jane Example</span>
+          </span>
+        </a>
+      </div>
+      <div class="update-components-text">
+        <span class="break-words" dir="ltr"
+          >Humbled and honored to share that I have been named a Top Voice. Beyond grateful to
+          everyone who supported me on this journey.…&nbsp;see more</span
+        >
+      </div>
+    </div>
   </div>
 </div>

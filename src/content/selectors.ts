@@ -6,68 +6,84 @@
  * from the most specific and stable to a structural last resort. When the first
  * candidate stops matching the extension keeps working on the next one, and
  * {@link feedHealth} makes a total breakage visible instead of silent.
+ *
+ * As of the 2026 redesign LinkedIn ships **hashed CSS class names** (`_4633da7f`)
+ * and no `data-urn` attributes, so the old `.feed-shared-update-v2[data-urn]`
+ * selectors match nothing. What survived the redesign, and what we key off now:
+ *
+ * - `componentkey`, a React-style key. Post containers carry one shaped
+ *   `expanded<id>FeedType_MAIN_FEED_<SORT>`, which doubles as a stable post id.
+ * - `data-testid`, used on a handful of semantic landmarks (`mainFeed`,
+ *   `expandable-text-box`).
+ *
+ * The legacy selectors are kept behind the new ones: they cost nothing when
+ * they match nothing, and they keep the extension working for anyone still on
+ * an older rollout.
  */
 
-/** Post containers, most-specific first. */
+/** Marks the componentkey of a feed post container. */
+const FEED_TYPE_MARKER = 'FeedType_MAIN_FEED';
+
+/**
+ * Post containers, most-specific first.
+ *
+ * The `expanded` prefix matters: sibling components inside a post (the comment
+ * tools, for one) carry the same `FeedType_MAIN_FEED` marker but are not posts.
+ */
 export const POST_CONTAINERS = [
+  `div[componentkey^="expanded"][componentkey*="${FEED_TYPE_MARKER}"]`,
+  // Legacy markup, pre-2026 redesign.
   'div.feed-shared-update-v2[data-urn]',
   'div[data-urn^="urn:li:activity"]',
   'div[data-id^="urn:li:activity"]',
   'div.feed-shared-update-v2',
-  'div.fie-impression-container',
 ];
 
 /** The scrolling feed list, used as the MutationObserver root when present. */
 export const FEED_ROOTS = [
+  '[data-testid="mainFeed"]',
+  'div[componentkey^="container-update-list"]',
   'main div.scaffold-finite-scroll__content',
   'div.scaffold-finite-scroll__content',
-  'main[aria-label]',
   'main',
 ];
 
-/** The post body text. */
+/**
+ * The post body text.
+ *
+ * `expandable-text-box` is the wrapper LinkedIn puts around post commentary
+ * together with its "…mehr" / "…see more" button; it is present on every post,
+ * including ones with no `translatable-commentary` key.
+ */
 export const POST_TEXT = [
+  '[data-testid="expandable-text-box"]',
+  'div[componentkey^="translatable-commentary"]',
   '.update-components-text .break-words',
   '.feed-shared-update-v2__description .update-components-text',
   '.update-components-text',
-  '.feed-shared-inline-show-more-text',
-  '.feed-shared-update-v2__description',
 ];
 
-/** The author's display name. */
+/** Author profile / company links, used to identify the poster. */
+export const AUTHOR_LINK = [
+  'a[href*="/in/"], a[href*="/company/"]',
+  'a.update-components-actor__meta-link',
+];
+
+/** Legacy author name node. The redesign has no equivalent; see `extract.ts`. */
 export const AUTHOR_NAME = [
   '.update-components-actor__title span[aria-hidden="true"]',
   '.update-components-actor__title',
   '.update-components-actor__name',
 ];
 
-/** A link to the author's profile, used for a stable-ish author id. */
-export const AUTHOR_LINK = [
-  'a.update-components-actor__meta-link',
-  '.update-components-actor__container a[href*="/in/"]',
-  'a[href*="/in/"]',
-  'a[href*="/company/"]',
-];
-
-/** Secondary actor line — carries "Promoted" and follower counts. */
-export const AUTHOR_SUBTITLE = [
-  '.update-components-actor__description',
-  '.update-components-actor__sub-description',
-];
-
 /** Attached media (image, video, document, article card). */
 export const MEDIA = [
+  'img[src*="media.licdn.com"]',
+  'video',
   '.update-components-image',
   '.update-components-linkedin-video',
   '.update-components-article',
   '.update-components-document',
-  '.feed-shared-image',
-];
-
-/** Header shown above reposts and "X commented on this" surfaces. */
-export const REPOST_HEADER = [
-  '.update-components-header',
-  '.feed-shared-update-v2__update-content-wrapper .update-components-actor--with-control-menu',
 ];
 
 /** First matching element for any candidate selector. */
@@ -97,15 +113,29 @@ export function findFeedRoot(doc: Document = document): Element {
  * All post containers currently in the DOM, in document order.
  *
  * Unlike {@link queryAll}, this takes the union of every candidate rather than
- * the first that matches: LinkedIn renders some posts with a `data-urn` and
- * some without, and both are real posts. Nested matches are dropped so a
- * container inside another container is never scored twice.
+ * the first that matches, then drops any container nested inside another. Both
+ * matter: LinkedIn renders some posts with a `data-urn` and some without, and
+ * the redesign nests two identically-keyed divs per post, of which only the
+ * outer one is the post.
  */
 export function findPosts(root: ParentNode): Element[] {
   const matches = [...root.querySelectorAll(POST_CONTAINERS.join(','))];
   return matches.filter(
     (element) => !matches.some((other) => other !== element && other.contains(element)),
   );
+}
+
+/**
+ * The stable per-post identifier embedded in a container's `componentkey`.
+ *
+ * `expanded<id>FeedType_MAIN_FEED_RELEVANCE` → `<id>`. Returns null on legacy
+ * markup, where `extract.ts` falls back to the activity URN.
+ */
+export function postKeyId(element: Element): string | null {
+  const key = element.getAttribute('componentkey');
+  if (key === null || !key.includes(FEED_TYPE_MARKER)) return null;
+  const id = key.slice(0, key.indexOf(FEED_TYPE_MARKER)).replace(/^expanded/, '');
+  return id.length > 0 ? id : null;
 }
 
 export interface FeedHealth {

@@ -71,7 +71,17 @@ function phraseHits(haystack: string, phrases: string[]): string[] {
   return phrases.filter((phrase) => haystack.includes(phrase));
 }
 
+/*
+ * Phrase lists cover English and German side by side.
+ *
+ * LinkedIn's interface language and its post language are independent — a
+ * German-language feed is full of English posts and vice versa — so both sets
+ * are always active rather than switched on a detected locale. The lists are
+ * matched against lowercased, quote-normalized text.
+ */
+
 const OPENERS = [
+  // English
   "here's the thing",
   'unpopular opinion',
   'let that sink in',
@@ -90,6 +100,20 @@ const OPENERS = [
   'i was wrong',
   "here's why that matters",
   'stop scrolling',
+  // German
+  'unpopuläre meinung',
+  'lass das mal sacken',
+  'lies das nochmal',
+  'mal ehrlich',
+  'ganz ehrlich:',
+  'die wahrheit ist',
+  'niemand redet darüber',
+  'niemand spricht darüber',
+  'hör auf zu scrollen',
+  'kleiner reminder',
+  'merk dir das',
+  'das ändert alles',
+  'unbeliebte meinung',
 ];
 
 const BAIT = [
@@ -111,6 +135,22 @@ const BAIT = [
   'comment below',
   'let me know in the comments',
   '♻️',
+  // German
+  'was denkst du?',
+  'wie siehst du das',
+  'siehst du das auch so',
+  'stimmst du zu',
+  'was fehlt in der liste',
+  'schreib es in die kommentare',
+  'schreibt es in die kommentare',
+  'kommentiere mit',
+  'teile diesen beitrag',
+  'folge mir für mehr',
+  'folgt mir für mehr',
+  'markiere jemanden',
+  'speichere diesen beitrag',
+  'link in den kommentaren',
+  'link in die kommentare',
 ];
 
 const LLM_VOCAB = [
@@ -144,6 +184,22 @@ const LLM_VOCAB = [
   'leveraging',
   'furthermore',
   'moreover',
+  // German
+  'in der heutigen schnelllebigen',
+  'im digitalen zeitalter',
+  'ganzheitlicher ansatz',
+  'nahtlose integration',
+  'bahnbrechend',
+  'wegweisend',
+  'revolutionieren',
+  'es ist wichtig zu beachten',
+  'zusammenfassend lässt sich',
+  'darüber hinaus',
+  'des weiteren',
+  'die zukunft der arbeit',
+  'spannende reise',
+  'auf ein neues level',
+  'ein echter gamechanger',
 ];
 
 const HUMILITY = [
@@ -165,6 +221,19 @@ const HUMILITY = [
   'the best is yet to come',
   'over the moon',
   'this one is for my',
+  // German
+  'demütig und dankbar',
+  'unglaublich dankbar',
+  'überwältigt von',
+  'ein traum wird wahr',
+  'ein traum geht in erfüllung',
+  'ich poste sonst nie',
+  'ich schreibe sonst nie',
+  'worte können nicht beschreiben',
+  'das hätte ich nie gedacht',
+  'wer hätte das gedacht',
+  'das beste kommt noch',
+  'stolz wie oskar',
 ];
 
 const MORAL_MARKERS = [
@@ -176,6 +245,62 @@ const MORAL_MARKERS = [
   'what this taught me',
   'never forget',
   'remember this',
+  // German
+  'die lektion',
+  'was ich gelernt habe',
+  'was ich daraus gelernt habe',
+  'das fazit',
+  'moral von der geschicht',
+  'was mir das gezeigt hat',
+  'vergiss das nie',
+];
+
+/**
+ * The pivot from story to sales pitch, and the call to action that follows it.
+ *
+ * Split into two rules so a founder writing plainly about their product trips
+ * only one of them and stays under the threshold, while the full
+ * hook-story-pitch-CTA construction trips both.
+ */
+const PRODUCT_PIVOT = [
+  // English
+  'that is why we built',
+  "that's why we built",
+  'this is why we built',
+  'that is why we created',
+  "that's why we created",
+  'which is why we built',
+  'so we built',
+  'we are raising',
+  "we're raising",
+  // German
+  'deshalb haben wir',
+  'darum haben wir',
+  'genau deshalb haben wir',
+  'aus diesem grund haben wir',
+  'deswegen haben wir',
+];
+
+const CALL_TO_ACTION = [
+  // English
+  'learn more and',
+  'book a call',
+  'book a demo',
+  'dm me',
+  'send me a dm',
+  'sign up here',
+  'get early access',
+  'join the waitlist',
+  'check out our',
+  // German
+  'mehr erfahren',
+  'jetzt anmelden',
+  'buche ein gespräch',
+  'buch dir einen termin',
+  'schreib mir eine nachricht',
+  'melde dich bei mir',
+  'sichere dir',
+  'jetzt kostenlos',
 ];
 
 const GENERIC_HASHTAGS = new Set([
@@ -252,6 +377,10 @@ export const RULES: Rule[] = [
         /\bit'?s not (?:about )?[^.!?\n]{2,45}[.!?\n]\s*it'?s\b[^.!?\n]{0,45}/,
         /\b(?:isn'?t|aren'?t|wasn'?t|weren'?t|is not|are not|was not|were not) (?:just )?(?:about )?[^.!?\n]{2,45}[.!?\n—-]\s*(?:it'?s|they'?re|it is|they are)\b[^.!?\n]{0,45}/,
         /\bnot (?:just )?[a-z][^.!?\n]{2,35}\.\s*[a-z]{0,10}\s*but\b[^.!?\n]{0,45}/,
+        // German: "Es geht nicht um X. Es geht um Y." / "Das ist kein X. Das ist Y."
+        /\bes geht nicht um\b[^.!?\n]{2,45}[.!?\n]\s*es geht um\b[^.!?\n]{0,45}/,
+        /\bdas ist kein[a-z]{0,2}\b[^.!?\n]{2,45}[.!?\n]\s*das ist\b[^.!?\n]{0,45}/,
+        /\bnicht (?:das|der|die)\b[^.!?\n]{2,40}[.!?\n—-]\s*sondern\b[^.!?\n]{0,45}/,
       ])?.trim() ?? null,
   },
   {
@@ -344,6 +473,10 @@ export const RULES: Rule[] = [
       firstMatch(ctx.lower, [
         /\b(?:so |beyond |incredibly |truly )?(?:thrilled|humbled|honou?red|excited|delighted|proud|pumped|stoked)\b[^.!?\n]{0,50}\bto (?:announce|share|reveal|be named)\b[^.!?\n]{0,50}/,
         /\b(?:excited|proud) to (?:announce|share)\b[^.!?\n]{0,50}/,
+        // German: "Ich freue mich, … bekannt zu geben / anzukündigen / zu teilen"
+        /\b(?:ich freue mich|wir freuen uns|freue mich)\b[^.!?\n]{0,60}\b(?:bekannt ?(?:zu )?geben|anzuk(?:ü|ue)ndigen|zu (?:teilen|verk(?:ü|ue)nden)|mitzuteilen)\b/,
+        /\b(?:stolz|mit stolz)\b[^.!?\n]{0,40}\b(?:zu verk(?:ü|ue)nden|bekannt ?zu ?geben|anzuk(?:ü|ue)ndigen)\b/,
+        /\bes ist offiziell\b[^.!?\n]{0,50}/,
       ])?.trim() ?? null,
   },
   {
@@ -367,7 +500,35 @@ export const RULES: Rule[] = [
         /\b(?:i|we|my|our)\b[^.!?\n]{0,60}\$\s?\d[\d,.]*\s?(?:k|m|mm|b|million|billion)?\b/,
         /\b\d[\d,.]*\s?(?:k|m)?\+?\s*(?:followers|subscribers|users|customers|downloads|signups|arr|mrr)\b/,
         /\bfrom (?:0|zero)\b[^.!?\n]{0,30}\bto\b[^.!?\n]{0,30}\bin \d+\s*(?:days|weeks|months)\b/,
+        // German
+        /\b\d[\d,.]*\s?(?:k|m)?\+?\s*(?:follower|abonnenten|kunden|nutzer|downloads|anmeldungen)\b/,
+        /\bvon (?:0|null)\b[^.!?\n]{0,30}\bauf\b[^.!?\n]{0,30}\bin \d+\s*(?:tagen|wochen|monaten)\b/,
       ])?.trim() ?? null,
+  },
+  {
+    id: 'product-pivot',
+    category: 'brag',
+    label: 'Pivots from story to sales pitch',
+    weight: 0.9,
+    test: (ctx) => {
+      const hits = phraseHits(ctx.lower, PRODUCT_PIVOT);
+      return hits.length > 0 ? snippet(hits.join(', ')) : null;
+    },
+  },
+  {
+    id: 'cta-link',
+    category: 'brag',
+    label: 'Call to action with a tracked link',
+    weight: 0.7,
+    test: (ctx) => {
+      const hits = phraseHits(ctx.lower, CALL_TO_ACTION);
+      const shortlink = /\blnkd\.in\//.test(ctx.lower);
+      if (hits.length === 0 && !shortlink) return null;
+      // A bare link is normal; a link plus a sales imperative is the tell.
+      if (hits.length === 0) return null;
+      return snippet(shortlink ? `${hits.join(', ')} + lnkd.in link` : hits.join(', '));
+    },
+    scale: (ctx) => (/\blnkd\.in\//.test(ctx.lower) ? 1.4 : 1),
   },
   {
     id: 'parable',
