@@ -43,11 +43,35 @@ export function decorationIntact(element: Element, chipExpected: boolean): boole
   return element.querySelector(':scope > .sf-chip') !== null;
 }
 
-function buildPanel(verdict: Verdict, options: DecorateOptions): HTMLElement {
+/**
+ * Panel state that has to outlive a re-render.
+ *
+ * Giving feedback writes to storage, which re-scores and re-decorates the post
+ * — so the click that opens the panel is also what would destroy it. Carrying
+ * these across means the panel stays put and the confirmation stays readable.
+ */
+interface PanelState {
+  open: boolean;
+  status: string;
+}
+
+function readPanelState(host: HTMLElement): PanelState {
+  const panel = host.querySelector<HTMLElement>(':scope > .sf-panel');
+  return {
+    open: panel !== null && !panel.hidden,
+    status: panel?.querySelector('.sf-panel__status')?.textContent ?? '',
+  };
+}
+
+function buildPanel(verdict: Verdict, options: DecorateOptions, carried: PanelState): HTMLElement {
   const panel = el('div', 'sf-panel');
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'Why SlopFilter flagged this post');
+
+  // LinkedIn puts its own click handlers on the post body. Without this, using
+  // the panel can also open the post or trigger a re-render underneath us.
+  panel.addEventListener('click', (event) => event.stopPropagation());
 
   panel.appendChild(
     el(
@@ -89,16 +113,18 @@ function buildPanel(verdict: Verdict, options: DecorateOptions): HTMLElement {
   );
   panel.appendChild(footer);
 
-  const status = el('p', 'sf-panel__status');
-  status.hidden = true;
+  const status = el('p', 'sf-panel__status', carried.status);
+  status.hidden = carried.status.length === 0;
   panel.appendChild(status);
 
   const submit = (action: FeedbackAction) => {
-    void Promise.resolve(options.onFeedback(action)).then(() => {
-      status.textContent =
-        action === 'not-slop' ? 'Thanks — learning from that.' : 'Noted — learning from that.';
-      status.hidden = false;
-    });
+    // Confirm synchronously, before awaiting the write. Storing feedback
+    // re-renders this post, and only state already on the panel survives that;
+    // a message set in the callback would land on a detached node.
+    status.textContent =
+      action === 'not-slop' ? 'Thanks — learning from that.' : 'Noted — learning from that.';
+    status.hidden = false;
+    void Promise.resolve(options.onFeedback(action));
   };
   notSlop.addEventListener('click', () => submit('not-slop'));
   isSlop.addEventListener('click', () => submit('slop'));
@@ -119,6 +145,8 @@ export function decorate(
   options: DecorateOptions,
 ): void {
   const host = element as HTMLElement;
+  // Read before undecorate: it is about to remove the panel we are reading.
+  const carried = readPanelState(host);
   undecorate(host);
 
   const flagged = verdict.label !== 'clean' && !options.cleared;
@@ -143,7 +171,11 @@ export function decorate(
       : 'Mark this post as slop',
   );
 
-  const panel = buildPanel(verdict, options);
+  const panel = buildPanel(verdict, options, carried);
+  if (carried.open) {
+    panel.hidden = false;
+    chip.setAttribute('aria-expanded', 'true');
+  }
 
   chip.addEventListener('click', (event) => {
     event.stopPropagation();

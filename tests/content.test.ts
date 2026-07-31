@@ -240,3 +240,45 @@ describe('surviving LinkedIn re-rendering a post', () => {
     expect(post.getAttribute('data-sf-state')).toBe('flagged');
   });
 });
+
+describe('feedback gives visible confirmation', () => {
+  async function openPanelOn(selector: string) {
+    await import('../src/content/index');
+    await settle();
+    const post = document.querySelector(selector)!;
+    post.querySelector<HTMLButtonElement>('.sf-chip')!.click();
+    return post;
+  }
+
+  function press(post: Element, label: string) {
+    const button = [...post.querySelectorAll<HTMLButtonElement>('.sf-panel .sf-btn')].find(
+      (b) => b.textContent === label,
+    );
+    expect(button, `no "${label}" button`).toBeDefined();
+    button!.click();
+  }
+
+  it('keeps the panel open and confirms after "This is slop"', async () => {
+    const post = await openPanelOn('[data-sf-state="clean"]');
+    press(post, 'This is slop');
+    await settle();
+
+    // The user's own click triggers a re-render; if that discards the panel,
+    // a post that was already dimmed shows no response at all.
+    const panel = post.querySelector<HTMLElement>('.sf-panel')!;
+    expect(panel, 'panel was destroyed by the re-render').not.toBeNull();
+    expect(panel.hidden, 'panel snapped shut').toBe(false);
+    expect(panel.querySelector('.sf-panel__status')!.textContent).toMatch(/learning/i);
+  });
+
+  it('keeps the panel open and confirms after "This was no slop"', async () => {
+    const post = await openPanelOn('[data-sf-state="flagged"]');
+    press(post, 'This was no slop');
+    await settle();
+
+    expect(post.getAttribute('data-sf-state')).toBe('cleared');
+    const panel = post.querySelector<HTMLElement>('.sf-panel')!;
+    expect(panel.hidden, 'panel snapped shut').toBe(false);
+    expect(panel.querySelector('.sf-panel__status')!.textContent).toMatch(/learning/i);
+  });
+});
