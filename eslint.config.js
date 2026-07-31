@@ -18,7 +18,7 @@ export default tseslint.config(
   {
     // Build tooling: plain Node ESM, outside the TS project, so type-aware
     // linting is switched off rather than pointed at a tsconfig it is not in.
-    files: ['scripts/**/*.mjs', 'eslint.config.js'],
+    files: ['scripts/**/*.mjs', 'tools/**/*.mjs', 'eslint.config.js'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       ...tseslint.configs.disableTypeChecked.languageOptions,

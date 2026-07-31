@@ -18,7 +18,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "zip": "npm run build && cd dist && zip -r ../slopfilter-$npm_package_version.zip . -x '.*'"
+    "zip": "npm run build && cd dist && zip -r ../slopfilter-$npm_package_version.zip . -x '.*'",
+    "screenshots": "vite-node tools/screenshots/build.mjs && node tools/screenshots/render.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

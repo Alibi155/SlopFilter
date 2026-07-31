@@ -13,12 +13,23 @@ structurally incapable of sending your feed anywhere. No account, no server, no 
 
 ## Screenshots
 
-<!-- Replace these with real captures before submitting to the Chrome Web Store.
-     See store/README.md for the required sizes. -->
+The same feed with the filter off and on. Slop is greyed out, never removed — hover to read it
+normally.
 
-| Flagged post                          | Why it was flagged                      | Settings                     |
-| ------------------------------------- | --------------------------------------- | ---------------------------- |
-| _screenshot: dimmed post with a chip_ | _screenshot: reasons panel with quotes_ | _screenshot: keyword editor_ |
+![The same feed with SlopFilter off and on](docs/screenshots/1-before-after.png)
+
+Every flag quotes the text that triggered it, and both corrections are one click away.
+
+![The reasons panel, quoting the matched text](docs/screenshots/3-reasons.png)
+
+| Popup                                  | Settings                                        |
+| -------------------------------------- | ----------------------------------------------- |
+| ![Popup](docs/screenshots/4-popup.png) | ![Options page](docs/screenshots/5-options.png) |
+
+The posts shown are invented, and so are the names — no real feed content appears in this repo.
+Every score and every quoted reason is genuine output from the scoring engine, produced by
+`npm run screenshots`, which regenerates all of it from
+[`tools/screenshots/`](tools/screenshots/) so the images cannot drift from the real UI.
 
 ---
 
@@ -83,11 +94,12 @@ You can also add your own keyword rules, at three strengths, in the extension's 
 
 ```bash
 npm install
-npm test          # 64 tests
+npm test          # 66 tests
 npm run lint      # eslint + prettier
 npm run typecheck
 npm run build     # -> dist/
 npm run zip       # -> slopfilter-<version>.zip for the Web Store
+npm run screenshots # -> docs/screenshots/ (needs Chrome)
 ```
 
 The scoring engine in `src/engine/` is pure — no DOM, no `chrome.*` — and is tested against a corpus
