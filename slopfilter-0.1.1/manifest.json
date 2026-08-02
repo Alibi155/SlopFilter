@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SlopFilter for LinkedIn",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "Greys out AI slop and humblebrag posts in your LinkedIn feed. Runs entirely on your device \u2014 no accounts, no servers, no tracking.",
   "permissions": ["storage"],
   "content_scripts": [

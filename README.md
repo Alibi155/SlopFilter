@@ -6,7 +6,7 @@ This extensions allows you to grey out or completely hide LinkedIn Posts, that a
 
 The model is mostly based on logistic regression and learns based on your feedback on Posts (e.g., marking them as slop or the reverse).
 
-There is no visible impact on performance, not blocking DOM buildup and using ca. 0.3ms per Post for classification. 
+There is no visible impact on performance, not blocking DOM buildup and using ca. 0.3ms per Post for classification.
 
 **Everything runs on your device.** The extension requests no network permission at all, so it is
 structurally incapable of sending your feed anywhere. No account, no server, no telemetry.

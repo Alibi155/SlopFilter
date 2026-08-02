@@ -160,3 +160,20 @@ describe('manifest permissions', () => {
     expect(manifest.content_scripts[0]!.matches).toEqual(['https://www.linkedin.com/feed/*']);
   });
 });
+
+describe('release metadata', () => {
+  it('keeps the manifest version in step with package.json', () => {
+    // The build injects package.json's version into dist/manifest.json, so a
+    // stale number here would ship a manifest that disagrees with the zip's
+    // filename — which the Web Store only rejects after upload.
+    const pkg = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
+      version: string;
+    };
+    const manifest = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'public/manifest.json'), 'utf8'),
+    ) as { version: string };
+
+    expect(manifest.version).toBe(pkg.version);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});

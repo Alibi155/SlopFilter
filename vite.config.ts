@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import pkg from './package.json';
 
 /**
  * Build config for the extension pages (popup + options).
@@ -35,7 +36,18 @@ export default defineConfig({
   },
   plugins: [
     viteStaticCopy({
-      targets: [{ src: resolve(import.meta.dirname, 'public/manifest.json'), dest: '.' }],
+      targets: [
+        {
+          src: resolve(import.meta.dirname, 'public/manifest.json'),
+          dest: '.',
+          // package.json is the single source of truth for the version, so
+          // `npm version patch` is all a release needs. Keeping the number in
+          // two files meant the zip could be named one version and declare
+          // another, which the Web Store rejects only after upload.
+          transform: (content) =>
+            JSON.stringify({ ...JSON.parse(content), version: pkg.version }, null, 2) + '\n',
+        },
+      ],
     }),
   ],
 });
