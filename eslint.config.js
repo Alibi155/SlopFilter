@@ -2,7 +2,10 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'node_modules/**'] },
+  // slopfilter-*/ is an unpacked release bundle — built output, not source.
+  // Linting it fails on files no tsconfig covers, which is a confusing way to
+  // learn that someone unzipped a build into the project root.
+  { ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'slopfilter-*/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

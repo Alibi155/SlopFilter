@@ -2,6 +2,8 @@ node_modules/
 dist/
 coverage/
 *.zip
+# Unpacked store bundles, e.g. slopfilter-0.2.0/ from unzipping a release.
+slopfilter-*/
 *.log
 .DS_Store
 .vite/
