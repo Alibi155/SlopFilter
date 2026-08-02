@@ -177,3 +177,16 @@ describe('release metadata', () => {
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });
+
+describe('manifest description', () => {
+  it('fits the 132-character limit Chrome enforces', () => {
+    // Over the limit the store rejects the upload, and the number is easy to
+    // exceed by a few characters without noticing.
+    const manifest = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'public/manifest.json'), 'utf8'),
+    ) as { description: string };
+
+    expect(manifest.description.length).toBeGreaterThan(0);
+    expect(manifest.description.length).toBeLessThanOrEqual(132);
+  });
+});

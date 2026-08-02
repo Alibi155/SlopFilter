@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "zip": "npm run build && rm -f slopfilter-$npm_package_version.zip && cd dist && zip -qr ../slopfilter-$npm_package_version.zip . -x '.*'",
-    "screenshots": "vite-node tools/screenshots/build.mjs && node tools/screenshots/render.mjs"
+    "screenshots": "vite-node tools/screenshots/build.mjs && node tools/screenshots/render.mjs",
+    "version": "node scripts/sync-manifest-version.mjs && git add public/manifest.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
