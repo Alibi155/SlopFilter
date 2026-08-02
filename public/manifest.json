@@ -1,14 +1,22 @@
 {
   "manifest_version": 3,
   "name": "SlopFilter for LinkedIn",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Detects LLM generated content and AI slop in your feed, greys it out or removes it. Runs 100% locally without sharing any data",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/feed/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "https://www.linkedin.com/feed/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
